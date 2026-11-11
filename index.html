@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>อิ่มดี · ติดตามการกินและการเติบโตของลูก</title>
+<meta name="theme-color" content="#0D0F1E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<a class="sr" href="#content">ข้ามไปเนื้อหา</a>
+<div class="shell">
+  <aside class="side" id="side" aria-label="เมนูหลัก">
+    <div class="brand"><div class="logo">อ</div><div><b>อิ่มดี</b><small>ติดตามการกินและการเติบโตของลูก</small></div></div>
+    <button class="kid" id="kid" type="button"></button>
+    <button class="btn-log" type="button" data-log=""><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>บันทึกการกิน</button>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <span class="sync" id="sync" role="status">กำลังเชื่อมต่อ…</span>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="icbtn m-only" id="menu-btn" aria-label="เปิดเมนู"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div><div class="crumb" id="crumb"></div><h1 id="title">ภาพรวม</h1></div>
+      <div class="top-r" id="top-r"></div>
+    </header>
+    <main class="content" id="content" tabindex="-1">
+      <section class="view" id="v-home"></section>
+      <section class="view" id="v-days"></section>
+      <section class="view" id="v-insights"></section>
+      <section class="view" id="v-report"></section>
+      <section class="view" id="v-routine"></section>
+      <section class="view" id="v-settings"></section>
+    </main>
+  </div>
+</div>
+<nav class="bnav" id="bnav" aria-label="เมนูด้านล่าง"></nav>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="bg" data-close></div><div class="panel" id="sheet-panel"></div></div>
+<div class="lightbox" id="lightbox"><img alt=""></div>
+<div id="tip" role="tooltip"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="js/demo-data.js"></script>
+<script src="js/demo-notes.js"></script>
+<script src="js/core.js"></script>
+<script src="js/nutri.js"></script>
+<script src="js/views/home.js"></script>
+<script src="js/views/days.js"></script>
+<script src="js/views/log.js"></script>
+<script src="js/views/insights.js"></script>
+<script src="js/views/report.js"></script>
+<script src="js/views/routine.js"></script>
+<script src="js/views/settings.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
