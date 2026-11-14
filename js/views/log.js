@@ -143,8 +143,8 @@ function draw(){
     let no = 0;
     if(!R.mode){
       b += `<div class="modepick"><p class="sub" style="margin:0">จะบันทึก${MEAL[R.k].name}แบบไหน</p>
-        <button type="button" class="mcard ai" data-mode="photo"><span class="mic">${icon("sparkle")}</span><b>ประเมินจากรูป <span class="pill accent">AI</span></b><span>ถ่ายรูปก่อนและหลังกิน AI ช่วยระบุเมนู ส่วนประกอบ ปริมาณที่เสิร์ฟและที่กินจริง แล้วคุณตรวจแก้ได้</span></button>
-        <button type="button" class="mcard" data-mode="manual"><span class="mic">${icon("edit")}</span><b>บันทึกเอง</b><span>ใส่เมนูและปริมาณเองเป็นหน่วยครัวเรือน เหมาะกับมื้อที่ไม่ได้ถ่ายรูป</span></button></div>`;
+        <button type="button" class="mcard" data-mode="manual"><span class="mic">${icon("edit")}</span><b>บันทึกเอง</b><span>ใส่เมนูและปริมาณเองเป็นหน่วยครัวเรือน เหมาะกับมื้อที่ไม่ได้ถ่ายรูป</span></button>
+        <button type="button" class="mcard ai" data-mode="photo"><span class="mic">${icon("sparkle")}</span><b>ประเมินจากรูป <span class="pill accent">AI</span></b><span>ถ่ายรูปก่อนและหลังกิน AI ช่วยระบุเมนู ส่วนประกอบ ปริมาณที่เสิร์ฟและที่กินจริง แล้วคุณตรวจแก้ได้</span></button></div>`;
       P.innerHTML = hd + `<div class="sheet-b" id="sheet-b">${b}</div><div class="sheet-f"><span class="msg" id="lmsg"></span></div>`;
       return;
     }
