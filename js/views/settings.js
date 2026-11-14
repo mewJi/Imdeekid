@@ -23,6 +23,10 @@ A.views.settings = { render(){
       <input class="inp" id="st-mem" placeholder="เพิ่มชื่อ เช่น น้า" style="width:160px"><button class="btn sm" id="st-madd">${icon("plus")}เพิ่ม</button></div>
     <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" id="st-save-mem">บันทึกรายชื่อ</button></div>
   </div>
+  <div class="card">${A.cardHead("หน่วยที่มักเสิร์ฟลูก","ตั้งหน่วยเริ่มต้นของแต่ละหมวดอาหาร เวลาเพิ่มอาหารระบบจะเลือกหน่วยนี้ให้ก่อน (เปลี่ยนในแต่ละรายการได้)")}
+    ${A.CATS.map(c=>`<div class="set-row"><div><h4>${esc(c)}</h4></div><label class="field"><select class="du-sel" data-cat="${esc(c)}" aria-label="หน่วยเริ่มต้นของ ${esc(c)}">${A.unitsFor(c).map(([v,l])=>`<option value="${esc(v)}"${v===A.defaultUnit(c)?" selected":""}>${esc(l)}</option>`).join("")}</select></label></div>`).join("")}
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" id="st-save-units">บันทึกหน่วยเริ่มต้น</button></div>
+  </div>
   <div class="card">${A.cardHead("การแสดงผลและข้อมูล")}
     <div class="set-row"><div><h4>ธีม</h4></div><div>${A.seg("theme", [["dark","มืด"],["light","สว่าง"]], S.theme)}</div></div>
     <div class="set-row"><div><h4>ข้อมูลตัวอย่าง</h4><p class="tiny">ข้อมูลสาธิต 8 วัน (คลิป รูป และบันทึกผู้ปกครอง) ปิดเมื่อเริ่มใช้งานจริง ข้อมูลที่บันทึกเองไม่หาย</p></div><div>${A.seg("demo", [["on","แสดง"],["off","ซ่อน"]], S.settings.demo?"on":"off")}</div></div>
@@ -37,6 +41,7 @@ A.views.settings = { render(){
   const addM = ()=>{ const v=$("#st-mem").value.trim(); if(!v) return; draftMembers=[...mem.filter(x=>x!==v), v]; this.render(); $("#st-mem").focus(); };
   $("#st-madd").onclick = addM; $("#st-mem").onkeydown = e=>{ if(e.key==="Enter"){ e.preventDefault(); addM(); } };
   $$("[data-mdel]", el).forEach(b=>b.onclick=()=>{ draftMembers = mem.filter((_,i)=>i!==+b.dataset.mdel); this.render(); });
+  $("#st-save-units").onclick = ()=>{ const du={}; $$(".du-sel", el).forEach(x=>{ du[x.dataset.cat]=x.value; }); saveSettings({defaultUnits: du}); };
   $("#st-save-mem").onclick = async ()=>{ if(!mem.length){ A.toast("ต้องมีอย่างน้อย 1 คน"); return; } if(await saveSettings({members: mem})) draftMembers=null; };
   $("#st-photo").onchange = async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const sm=await A.resizeImg(f,480);
     if(S.assets && !S.assets.local){ try{ A.setSync("กำลังอัปโหลดรูป…"); const r=await S.assets.upload(sm.blob); S.profile={photoId:r.id, photoUrl:r.url}; await A.save("app/profile", S.profile); }catch(_){ A.toast("อัปโหลดรูปไม่สำเร็จ"); return; } }

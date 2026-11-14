@@ -42,7 +42,7 @@ function kidHtml(){
 }
 function topRight(v){
   const r = $("#top-r");
-  const range = RANGED.includes(v) ? A.seg("range", [["7","7 วัน"],["14","14 วัน"],["30","30 วัน"],["all","ทั้งหมด"]], S.range, "range-seg") : "";
+  const range = RANGED.includes(v) && v!=="home" ? A.seg("range", [["7","7 วัน"],["14","14 วัน"],["30","30 วัน"],["all","ทั้งหมด"]], S.range, "range-seg") : "";
   const theme = `<button class="icbtn" id="theme-btn" aria-label="สลับโหมดสว่าง/มืด" data-tip="สลับโหมดสว่าง/มืด">${icon(S.theme==="dark"?"sun":"moon")}</button>`;
   r.innerHTML = range + theme;
 }

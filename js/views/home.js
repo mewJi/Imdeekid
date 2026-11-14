@@ -2,6 +2,27 @@
 "use strict";
 const A = window.App, {$,esc,icon,S,MEALS,thShort,thLong,TH_DS,parseD,today} = A;
 
+/* การ์ด "วันนี้": แต่ละประเภทเป็นเมนูแยก — กดเพื่อบันทึก/แก้ไข ถ้าบันทึกแล้วขึ้นเครื่องหมาย "บันทึกแล้ว" */
+function tile(ic, name, log, done, sum){
+  return `<button type="button" class="slot ${done?"done":"empty-slot"}" data-log="${log}"><span class="k">${icon(ic)}${name}</span>${done?`<span class="v ok">${icon("check")}บันทึกแล้ว</span>${sum?`<span class="tiny">${esc(sum)}</span>`:""}`:`<span class="v">+ บันทึก</span>`}</button>`;
+}
+function todayCard(d){
+  const l = S.daylogs[d] || null;
+  const meals = MEALS.map(M=>{ const m=A.meal(d,M.k), lg=`${d}|${M.k}`; if(m.none) return tile("bowl",M.name,lg,false); const a=A.accept(m); return tile("bowl",M.name,lg,true, a&&a.k?`กินได้ ${a.ok}/${a.k} รายการ`:"มีข้อมูลบางส่วน"); }).join("");
+  const ml = l ? (l.milk||[]).reduce((s,x)=>s+(+x.ml||0),0) : 0;
+  const milkDone = !!(l && (ml || l.water));
+  const snacks = l ? (l.snacks||[]).filter(x=>x.n) : [];
+  const sl = A.sleeps(l);
+  const sym = l ? (l.sym||[]) : [];
+  const healthDone = !!(l && (sym.length || l.stool || l.symNote || l.note));
+  const bodyDone = !!(l && (l.weight || l.height));
+  const L = t => `${d}||${t}`;
+  return `<div class="card">${A.cardHead("วันนี้", "บันทึกหลังมื้อได้ ไม่ต้องหยิบมือถือระหว่างที่ลูกกิน")}
+    <div class="today">${meals}${tile("milk","นม",L("milk"),milkDone, ml?`${ml} มล.`:"บันทึกน้ำเปล่า")}${tile("snack","ของว่าง",L("snack"),snacks.length>0, `${snacks.length} รายการ`)}${tile("moon","นอน",L("sleep"),sl.length>0, `${sl.length} รอบ`)}</div>
+    <div class="dash-div" role="separator"><span>ไม่บังคับ</span></div>
+    <div class="today">${tile("thermo","อาการ",L("health"),healthDone, sym.length?sym.join(", "):"")}${tile("scale","น้ำหนัก / ส่วนสูง",L("body"),bodyDone, l?[l.weight?`${l.weight} กก.`:"", l.height?`${l.height} ซม.`:""].filter(Boolean).join(" · "):"")}</div>
+  </div>`;
+}
 function kpi(cls, ic, k, v, s){ if(v==="–"){ cls="none"; v="ไม่มี"; } /* ไม่มีค่า: แสดงคำว่า "ไม่มี" สีอ่อน ไม่ใช้สีเตือน */ return `<div class="kpi ${cls}"><span class="bar"></span><span class="k">${icon(ic)}${k}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`; }
 
 function kcell(d){
@@ -40,8 +61,9 @@ A.views.home = { render(){
   el.innerHTML = `
   <div class="hello">
     <div><p class="sub">${thLong(td)}</p><h2>${esc(c.name)} วันนี้เป็นอย่างไรบ้าง</h2></div>
-    <div class="chips"><button class="btn primary" data-log="${td}|${A.guessMeal()}">${icon("plus")}บันทึกมื้อ${A.MEAL[A.guessMeal()].short}</button><button class="btn" data-log="${td}||day">${icon("milk")}นม อาการ การนอน</button></div>
   </div>
+  ${todayCard(td)}
+  <div class="range-row">${A.seg("range", [["7","7 วัน"],["14","14 วัน"],["30","30 วัน"],["all","ทั้งหมด"]], S.range, "range-seg")}</div>
   <div class="sec-h"><div><h2>สรุป ${A.rangeLabel()}</h2><p>${dates.length?`${thShort(dates[0])} – ${thShort(dates[dates.length-1])} · ${dates.length} วันที่มีข้อมูล`:"ยังไม่มีข้อมูลในช่วงนี้"}</p></div></div>
   <div class="g4">
     ${kpi(p==null?"":A.lev(s.p), "check", "กินอาหารได้", p==null?"–":`${p}<small>%</small>`, s.k?`${s.ok} จาก ${s.k} รายการ`:"ยังไม่มีรายการอาหาร")}

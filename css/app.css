@@ -560,9 +560,9 @@ td.off{opacity:.4;color:var(--ink-3)}
 
 /* เลือกมื้อ: การ์ด 3 ช่องเต็มความกว้าง พร้อมไอคอน */
 .mealpick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.mealpick .opt{display:grid;justify-items:center;align-content:center;gap:6px;min-height:96px;padding:10px 6px;border-radius:16px;font-size:.92rem}
+.mealpick .opt{display:grid;justify-items:center;align-content:center;gap:6px;min-height:80px;padding:10px 6px;border-radius:16px;font-size:.92rem}
 .mealpick .opt b{font-weight:600}
-.mealpick .mart{width:46px;height:46px;display:block}
+.mealpick .opt .ic{width:28px;height:28px}
 .whomodal .wm-list{display:flex;flex-wrap:wrap;gap:8px;max-height:48vh;overflow:auto}
 .whomodal .wm-opt{min-height:44px;padding:8px 18px;font-size:.95rem}
 .whomodal .wm-act{justify-content:space-between}
@@ -620,3 +620,45 @@ select,select.inp,.field select{-webkit-appearance:none;appearance:none;backgrou
 .sheet-h h2{display:flex;align-items:center;gap:10px}
 .sh-ic{flex:none;width:32px;height:32px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center}
 .sh-ic .ic{width:18px;height:18px}
+
+/* การ์ด "วันนี้" ที่หน้าภาพรวม: เมนูแยกตามประเภท */
+.grp-h{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:.82rem;color:var(--ink-2)}
+.today .slot{min-height:84px;align-content:center}
+.slot.done{border-style:solid;border-color:color-mix(in srgb,var(--good) 50%,transparent);background:color-mix(in srgb,var(--good) 8%,var(--surface-2))}
+.slot .v.ok{display:flex;align-items:center;gap:6px;color:var(--good);font-size:1rem}
+.slot .v.ok .ic{width:18px;height:18px;flex:none}
+.slot .tiny{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* มือถือ: เมนูในการ์ด "วันนี้" แสดง 3 คอลัมน์ ไอคอนอยู่เหนือชื่อ */
+@media (max-width:600px){
+  .today{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .today .slot{padding:10px 6px;min-height:92px;gap:6px;justify-items:center;text-align:center;align-content:center}
+  .today .slot .k{flex-direction:row;align-items:center;justify-content:center;gap:4px;font-size:.76rem;line-height:1.25;text-align:left}
+  .today .slot .k .ic{width:18px;height:18px;flex:none}
+  .today .slot .v{font-size:.88rem}
+  .today .slot .v.ok{flex-direction:column;gap:2px;font-size:.8rem}
+  .today .slot .tiny{max-width:100%;font-size:.7rem}
+}
+
+/* เส้นประคั่นพร้อมข้อความตรงกลาง */
+.dash-div{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--ink-3);font-size:.82rem}
+.dash-div::before,.dash-div::after{content:"";flex:1;border-top:1.5px dashed var(--line-2)}
+
+.range-row{margin:20px 0 -6px}
+
+/* รายการอาหารที่เสิร์ฟ: ไอคอนอาหารนำหน้า + ชื่อเมนูบรรทัดเดียว, หมวดอาหารขึ้นบรรทัดใหม่ */
+.sitem .row1,.sitem .row1{grid-template-columns:36px minmax(0,1fr) 38px;gap:6px;align-items:center}
+.sitem .fico{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center}
+.sitem .fico .ic{width:20px;height:20px}
+.sitem .row-cat select{width:100%}
+@media (max-width:600px){.sitem .row1{grid-template-columns:36px minmax(0,1fr) 36px}.sitem .row-cat select{min-height:38px}}
+
+/* รายชื่อผู้บันทึกใน modal: ชิปมีปุ่ม ✕ ลบ */
+.wm-chip{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:999px;background:var(--surface-2);overflow:hidden}
+.wm-chip .opt{border:0;background:transparent;min-height:44px}
+.wm-chip .opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.wm-chip:has(.opt[aria-pressed="true"]){border-color:var(--accent);background:var(--accent)}
+.wm-x{border:0;background:transparent;color:var(--ink-3);width:34px;height:44px;display:grid;place-items:center;cursor:pointer;padding:0 6px 0 0}
+.wm-x .ic{width:15px;height:15px}
+.wm-chip:has(.opt[aria-pressed="true"]) .wm-x{color:var(--on-accent)}
+.wm-x:hover{color:var(--bad)}
