@@ -128,7 +128,7 @@ function sumHTML(){
 }
 function photoSlot(k,lbl){
   const list=R.e.photos[k]||[];
-  return `<div class="field">${lbl}<div class="pthumbs">${list.map((p,ix)=>`<span class="pt"><img src="${esc(A.photoUrl(p))}" alt="${lbl} ${ix+1}"><button type="button" data-pk="${k}" data-pix="${ix}" aria-label="เอารูปออก">${icon("x")}</button></span>`).join("")}<label class="padd">${S.assets?`${icon("camera")}<span>เพิ่มรูป</span>`:"เพิ่มรูปได้เมื่อเชื่อมต่อ"}<input type="file" accept="image/*" capture="environment" data-pk="${k}" ${S.assets?"":"disabled"} hidden></label></div></div>`;
+  return `<div class="field">${lbl}<div class="pthumbs">${list.map((p,ix)=>`<span class="pt"><img src="${esc(A.photoUrl(p))}" alt="${lbl} ${ix+1}"><button type="button" data-pk="${k}" data-pix="${ix}" aria-label="เอารูปออก">${icon("x")}</button></span>`).join("")}<label class="padd">${S.assets?`${icon("camera")}<span>เพิ่มรูป</span>`:"เพิ่มรูปได้เมื่อเชื่อมต่อ"}<input type="file" accept="image/*" multiple data-pk="${k}" ${S.assets?"":"disabled"} hidden></label></div></div>`;
 }
 function draw(){
   const P=$("#sheet-panel"), e=R.e, l=R.l, ex=!!S.entries[R.d+"_"+R.k];
@@ -342,9 +342,9 @@ groups = ปริมาณที่กินจริงทั้งมื้�
   }catch(err){ const m=msgEl(); if(m) m.textContent = err&&err.code==="rate_limited"?"ใช้ AI ถี่เกินไป รอสักครู่แล้วลองใหม่":err&&err.code==="not_granted"?"ยังไม่ได้อนุญาตให้ใช้ AI":"AI วิเคราะห์ไม่สำเร็จ ลองใหม่ หรือเปลี่ยนเป็นบันทึกเอง"; const b2=$("#l-aiphoto"); if(b2){ b2.disabled=false; b2.innerHTML=`${icon("sparkle")}ให้ AI วิเคราะห์รูป`; } }
 }
 async function addPhoto(input){
-  const k=input.dataset.pk, f=input.files&&input.files[0]; if(!f||!S.assets) return;
+  const k=input.dataset.pk, fs=[...(input.files||[])]; if(!fs.length||!S.assets) return;
   readMeal(); const um=$("#l-up"); if(um) um.textContent="กำลังอัปโหลดรูป…";
-  try{ const sm=await A.resizeImg(f,1280); const r=await S.assets.upload(sm.blob); R.e.photos[k].push(S.assets.local ? {id:r.id} : {id:r.id,url:r.url}); A.logDirty=true; redraw(); }
+  try{ for(const f of fs){ const sm=await A.resizeImg(f,1280); const r=await S.assets.upload(sm.blob); R.e.photos[k].push(S.assets.local ? {id:r.id} : {id:r.id,url:r.url}); } A.logDirty=true; redraw(); }
   catch(_){ if(um) um.textContent="อัปโหลดรูปไม่สำเร็จ ลองใหม่"; }
 }
 const panel = $("#sheet");
