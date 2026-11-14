@@ -297,7 +297,7 @@ A.adequacy = (n, opts={}) => {
   const row = (lab, sub, r, unit, dec=0) => {
     const v = r.v, pc = r.p;
     const val = `<b class="num">${v?Math.round(v*10**dec)/10**dec:"–"}</b> <span class="tiny">/ ${r.need.toLocaleString()} ${unit}</span>`;
-    return `<div class="nrow"><div class="nl"><b>${lab}</b><span>${sub}</span></div>${A.nbar(r)}<div class="nv">${val}<br>${pc!=null&&v?`<span class="pill ${r.lev} num">${pc}%${n.milkKnown?"":" *"}</span>`:'<span class="pill neutral">ไม่มีข้อมูล</span>'}</div></div>`;
+    return `<div class="nrow"><div class="nl"><b>${lab}</b><span>${sub}</span></div>${A.nbar(r)}<div class="nv"><span class="nv-val">${val}</span><br>${pc!=null&&v?`<span class="pill ${r.lev} num">${pc}%${n.milkKnown?"":" *"}</span>`:'<span class="pill neutral">ไม่มีข้อมูล</span>'}</div></div>`;
   };
   return `<div class="nrows">${row("พลังงาน", `${n.req.perKg} kcal/กก.`, n.R.kcal, "kcal")}${row("โปรตีน", `${n.req.protPerKg} ก./กก.`, n.R.p, "ก.", 1)}${row("แคลเซียม", "นมเป็นแหล่งหลัก", n.R.ca, "มก.")}</div>`;
 };

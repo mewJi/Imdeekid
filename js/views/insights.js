@@ -32,8 +32,8 @@ function behavior(dates){
   const envRows = s.rows.filter(r=>r.m.env&&r.m.env.length);
   const behavCount = {}; s.rows.forEach(r=>(r.m.behav||[]).forEach(b=>behavCount[b]=(behavCount[b]||0)+1));
   let h = `<div class="g4">
-    ${mini("นั่งต่อเนื่องนานสุด (มัธยฐาน)", s.sitMed==null?"–":`${Math.round(s.sitMed)}<small> นาที</small>`, `จาก ${s.sitN} มื้อ`, s.sitMed==null?"":s.sitMed>=15?"good":s.sitMed>=8?"warn":"bad")}
-    ${mini("เวลามื้อ (มัธยฐาน)", s.durMed==null?"–":`${Math.round(s.durMed)}<small> นาที</small>`, "ตั้งแต่เริ่มจนเก็บโต๊ะ", s.durMed!=null&&s.durMed>45?"warn":"")}
+    ${mini("นั่งต่อเนื่องนานสุด", s.sitMed==null?"–":`${Math.round(s.sitMed)}<small> นาที</small>`, `จาก ${s.sitN} มื้อ`, s.sitMed==null?"":s.sitMed>=15?"good":s.sitMed>=8?"warn":"bad")}
+    ${mini("เวลามื้อ", s.durMed==null?"–":`${Math.round(s.durMed)}<small> นาที</small>`, "ตั้งแต่เริ่มจนเก็บโต๊ะ", s.durMed!=null&&s.durMed>45?"warn":"")}
     ${mini("เคี้ยวแล้วคาย", `${s.spit}<small> ครั้ง</small>`, s.spit?"ดูรายการในแท็บโภชนาการ":"ไม่พบในช่วงนี้", s.spit?"warn":"good")}
     ${mini("มื้อที่ต้องเดินตามป้อน", `${follow}<small> มื้อ</small>`, `จาก ${s.rows.filter(r=>!r.m.none).length} มื้อที่มีข้อมูล`, follow?"warn":"")}
   </div>`;

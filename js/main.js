@@ -34,7 +34,7 @@ A.current = () => parse();
 function navHtml(){
   const cur = parse();
   $("#nav").innerHTML = NAV.map(n=> n.h ? `<div class="nav-h">${n.h}</div>` : `<a href="#${n.v}" ${cur.raw===n.v?'aria-current="page"':""}>${icon(n.ic)}${n.label}</a>`).join("");
-  $("#bnav").innerHTML = BNAV.map(n=> n.fab ? `<a href="#" data-log="" aria-label="บันทึกการกิน"><span class="fab">${icon("plus")}</span></a>` : `<a href="#${n.v}" ${(cur.v===(n.match||n.v))?'aria-current="page"':""}>${icon(n.ic)}${n.label}</a>`).join("");
+  $("#bnav").innerHTML = BNAV.map(n=> n.fab ? `<a href="#" data-quick aria-haspopup="dialog" aria-label="เพิ่มบันทึก"><span class="fab">${icon("plus")}</span></a>` : `<a href="#${n.v}" ${(cur.v===(n.match||n.v))?'aria-current="page"':""}>${icon(n.ic)}${n.label}</a>`).join("");
 }
 function kidHtml(){
   const c=A.child(), ph=S.profile.photoUrl||S.profile.photoData;
@@ -61,15 +61,33 @@ window.addEventListener("hashchange", ()=>{ render(); window.scrollTo({top:0}); 
 $("#menu-btn").onclick = ()=>{ $("#side").classList.add("open"); $("#scrim").classList.add("on"); };
 $("#scrim").onclick = closeSide;
 $("#kid").onclick = ()=>A.go("setup");
+/* ปุ่ม + กลางแถบล่าง: bottom sheet เลือกประเภทบันทึก แล้วเปิดฟอร์มที่แท็บนั้น */
+const QUICK = [
+  {ic:"bowl", t:"มื้ออาหาร", s:"เมนู ปริมาณที่กิน", tab:""},
+  {ic:"milk", t:"นม", s:"มล. หรือจำนวนกล่อง", tab:"milk"},
+  {ic:"snack", t:"ของว่าง", s:"ขนม ผลไม้ นอกมื้อ", tab:"snack"},
+  {ic:"moon", t:"นอน", s:"ช่วงเวลาที่หลับ", tab:"sleep"},
+  {ic:"thermo", t:"อาการ", s:"ไข้ ไอ ถ่าย อารมณ์", tab:"health"},
+  {ic:"scale", t:"น้ำหนัก / ส่วนสูง", s:"วัดล่าสุด", tab:"body"},
+];
+function closeQuick(){ const q=$("#qsheet"); if(q) q.remove(); }
+function openQuick(date){
+  closeQuick(); const dt = date || "";
+  const q=document.createElement("div"); q.id="qsheet"; q.className="qsheet"; q.setAttribute("role","dialog"); q.setAttribute("aria-modal","true"); q.setAttribute("aria-label","เพิ่มบันทึก");
+  q.innerHTML=`<div class="qs-bg" data-qs-close></div><div class="qs-panel"><div class="qs-grip"></div><h3>บันทึกอะไรดี</h3><div class="qs-list">${QUICK.map(x=>`<button type="button" class="qs-item" data-log="${dt}||${x.tab}"><span class="qs-ic">${icon(x.ic)}</span><span class="qs-tx"><b>${x.t}</b><small>${x.s}</small></span>${icon("chevR","qs-go")}</button>`).join("")}</div></div>`;
+  document.body.appendChild(q); const f=q.querySelector(".qs-item"); if(f) f.focus();
+}
 document.addEventListener("click", e=>{
-  const lg = e.target.closest("[data-log]"); if(lg){ e.preventDefault(); const [d,k,tab]=(lg.dataset.log||"").split("|"); A.openLog({date:d||undefined, meal:k||undefined, tab:tab||undefined}); return; }
+  if(e.target.closest("[data-quick]")){ e.preventDefault(); openQuick(); return; }
+  if(e.target.closest("[data-qs-close]")){ closeQuick(); return; }
+  const lg = e.target.closest("[data-log]"); if(lg){ e.preventDefault(); closeQuick(); const [d,k,tab]=(lg.dataset.log||"").split("|"); if(tab==="day"){ openQuick(d); return; } /* บันทึกรายวันรวม → ให้เลือกประเภทก่อน */ A.openLog({date:d||undefined, meal:k||undefined, tab:tab||undefined}); return; }
   const hr = e.target.closest("[data-href]"); if(hr && !hr.disabled){ e.preventDefault(); location.hash = hr.dataset.href; return; }
   const sg = e.target.closest('[data-seg="range"] button'); if(sg){ S.range = sg.dataset.v; A.LS.set("range", S.range); render(); return; }
   if(e.target.closest("#theme-btn")){ S.theme = S.theme==="dark"?"light":"dark"; document.documentElement.dataset.theme=S.theme; A.LS.set("theme", S.theme); topRight(parse().v); return; }
   const z = e.target.closest("img[data-zoom]"); if(z){ const lb=$("#lightbox"); lb.querySelector("img").src=z.src; lb.classList.add("on"); return; }
   if(e.target.closest("#lightbox")) $("#lightbox").classList.remove("on");
 });
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ $("#lightbox").classList.remove("on"); closeSide(); if(A.closeLog) A.closeLog(); } });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeQuick(); $("#lightbox").classList.remove("on"); closeSide(); if(A.closeLog) A.closeLog(); } });
 const editing = () => { const a=document.activeElement; return a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && $("#content").contains(a); };
 A.on(()=>{ if(editing()){ A._pending=true; kidHtml(); return; } render(); });
 document.addEventListener("focusout", ()=>setTimeout(()=>{ if(A._pending && !editing()){ A._pending=false; render(); } },0));

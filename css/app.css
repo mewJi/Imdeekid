@@ -548,3 +548,75 @@ td.off{opacity:.4;color:var(--ink-3)}
   .sitem .row1 .icbtn{width:36px;height:36px}
   .sitem .row2{gap:5px}
 }
+
+/* modal เพิ่มผู้บันทึก */
+.whomodal{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:20px}
+.whomodal .wm-bg{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.whomodal .wm-card{position:relative;width:min(360px,100%);background:var(--bg-2);border:1px solid var(--line-2);border-radius:16px;padding:18px;display:grid;gap:12px;box-shadow:0 18px 50px rgba(0,0,0,.45);animation:slup .18s ease}
+.whomodal h3{font-size:1.05rem;margin:0}
+.whomodal .wm-act{display:flex;gap:8px;justify-content:flex-end}
+.opt[hidden]{display:none}
+.opt.opt-more{border-style:dashed;color:var(--accent-ink)}
+
+/* เลือกมื้อ: การ์ด 3 ช่องเต็มความกว้าง พร้อมไอคอน */
+.mealpick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mealpick .opt{display:grid;justify-items:center;align-content:center;gap:6px;min-height:96px;padding:10px 6px;border-radius:16px;font-size:.92rem}
+.mealpick .opt b{font-weight:600}
+.mealpick .mart{width:46px;height:46px;display:block}
+.whomodal .wm-list{display:flex;flex-wrap:wrap;gap:8px;max-height:48vh;overflow:auto}
+.whomodal .wm-opt{min-height:44px;padding:8px 18px;font-size:.95rem}
+.whomodal .wm-act{justify-content:space-between}
+
+/* ลูกศร dropdown: เว้นจากขอบขวา (ใช้ลูกศรของเราเอง แทนของเบราว์เซอร์ที่ชิดขอบ) */
+select,select.inp,.field select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237E85AC' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:14px;padding-right:36px!important;text-overflow:ellipsis}
+
+/* ช่องค้นหาเมนูที่เคยบันทึก */
+.combo{position:relative}
+.combo-ic{position:absolute;left:13px;top:21px;transform:translateY(-50%);color:var(--ink-3);display:grid;pointer-events:none}
+.combo-ic .ic{width:18px;height:18px}
+.inp.combo-in{padding-left:40px}
+.combo-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:6;margin:0;padding:4px;list-style:none;max-height:min(40vh,280px);overflow:auto;background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.combo-list[hidden]{display:none}
+.combo-opt{padding:11px 12px;border-radius:8px;cursor:pointer;font-size:.95rem}
+.combo-opt:hover,.combo-opt[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-ink)}
+.combo-new{color:var(--accent-ink)}
+.combo-empty{padding:10px 12px;color:var(--ink-3);font-size:.86rem}
+
+/* modal เพิ่มอาหารที่เสิร์ฟ: กว้างเกือบเต็มจอ อยู่ด้านบนเพื่อไม่ให้คีย์บอร์ดบัง */
+.whomodal.top{place-items:start center;padding-top:max(10px,4vh)}
+.whomodal .wm-card.wide{width:min(460px,100%);max-height:calc(100% - 20px);overflow:auto;gap:14px}
+.im-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.im-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px}
+.im-comps{display:grid;gap:10px}
+.im-comp{display:grid;gap:8px;padding:10px;border:1px dashed var(--line-2);border-radius:12px;background:var(--surface)}
+.im-comp-h{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:6px}
+@media (max-width:600px){.im-grid{grid-template-columns:1fr 1fr}.im-grid select:first-child{grid-column:1/-1}}
+
+/* bottom sheet ปุ่ม + (เลือกประเภทบันทึก) */
+.qsheet{position:fixed;inset:0;z-index:65}
+.qsheet .qs-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.qsheet .qs-panel{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg-2);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -10px 34px rgba(0,0,0,.38);animation:slup .22s ease}
+.qs-grip{width:38px;height:4px;border-radius:4px;background:var(--line-2);margin:0 auto 10px}
+.qsheet h3{font-size:1.05rem;margin:0 2px 10px}
+.qs-list{display:grid;gap:8px}
+.qs-item{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);cursor:pointer;min-height:64px}
+.qs-item:hover,.qs-item:focus-visible{border-color:var(--accent);background:var(--surface-2)}
+.qs-ic{flex:none;width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center}
+.qs-ic .ic{width:22px;height:22px}
+.qs-tx{display:grid;gap:2px;min-width:0;flex:1}
+.qs-tx b{font-size:1rem;font-weight:600}
+.qs-tx small{color:var(--ink-3);font-size:.8rem}
+.qs-go{width:18px;height:18px;color:var(--ink-3);flex:none}
+@media print{.qsheet{display:none!important}}
+
+.kpi.none .v{color:var(--ink-3);font-size:1.5rem;font-weight:500}
+
+/* มือถือ: ชื่อหมวดกับค่าอ้างอิง (เช่น 85 kcal/กก.) อยู่บรรทัดเดียวกัน ค่าชิดขวา */
+@media (max-width:600px){.nrow .nl{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.nrow .nl b{display:inline}.nrow .nl span{text-align:right;white-space:nowrap}}
+
+/* มือถือ: ค่าที่กินกับ % อยู่บรรทัดเดียวกัน (ค่าซ้าย % ชิดขวา) */
+@media (max-width:600px){.nrow .nv{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left}.nrow .nv br{display:none}}
+
+.sheet-h h2{display:flex;align-items:center;gap:10px}
+.sh-ic{flex:none;width:32px;height:32px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center}
+.sh-ic .ic{width:18px;height:18px}

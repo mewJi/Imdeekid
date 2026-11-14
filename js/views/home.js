@@ -2,19 +2,7 @@
 "use strict";
 const A = window.App, {$,esc,icon,S,MEALS,thShort,thLong,TH_DS,parseD,today} = A;
 
-function slot(d, M){
-  const m = A.meal(d, M.k), a = A.accept(m);
-  if(m.none) return `<button class="slot empty-slot" data-log="${d}|${M.k}"><span class="k">${icon("bowl")}${M.name}</span><span class="v">+ บันทึก</span><span class="tiny">ยังไม่มีข้อมูล</span></button>`;
-  const lev = a&&a.k ? A.lev(a.p) : "";
-  return `<button class="slot ${lev}" data-href="#days-${d}"><span class="k">${icon("bowl")}${M.name}${m.time?` · ${esc(m.time)}`:""}</span><span class="v">${a&&a.k?`กินได้ ${a.ok}/${a.k} รายการ`:"มีข้อมูลบางส่วน"}</span><span class="tiny">${a&&a.no?`ไม่กิน/คาย ${a.no} รายการ`:m.feedText?esc(m.feedText).slice(0,40):"ดูรายละเอียด"}</span></button>`;
-}
-function dailySlot(d){
-  const l = S.daylogs[d];
-  if(!l) return `<button class="slot empty-slot" data-log="${d}||day"><span class="k">${icon("milk")}นม อาการ การนอน</span><span class="v">+ บันทึก</span><span class="tiny">นม น้ำ ของว่าง อาการ</span></button>`;
-  const milk=(l.milk||[]).reduce((s,x)=>s+(+x.ml||0),0);
-  return `<button class="slot" data-log="${d}||day"><span class="k">${icon("milk")}นม อาการ การนอน</span><span class="v num">${milk?`นม ${milk} มล.`:"ยังไม่ใส่นม"}</span><span class="tiny">${l.sym&&l.sym.length?esc(l.sym.join(", ")):"ยังไม่บันทึกอาการ"}</span></button>`;
-}
-function kpi(cls, ic, k, v, s){ return `<div class="kpi ${cls}"><span class="bar"></span><span class="k">${icon(ic)}${k}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`; }
+function kpi(cls, ic, k, v, s){ if(v==="–"){ cls="none"; v="ไม่มี"; } /* ไม่มีค่า: แสดงคำว่า "ไม่มี" สีอ่อน ไม่ใช้สีเตือน */ return `<div class="kpi ${cls}"><span class="bar"></span><span class="k">${icon(ic)}${k}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`; }
 
 function kcell(d){
   const di = A.dayIntake(d);
@@ -54,13 +42,11 @@ A.views.home = { render(){
     <div><p class="sub">${thLong(td)}</p><h2>${esc(c.name)} วันนี้เป็นอย่างไรบ้าง</h2></div>
     <div class="chips"><button class="btn primary" data-log="${td}|${A.guessMeal()}">${icon("plus")}บันทึกมื้อ${A.MEAL[A.guessMeal()].short}</button><button class="btn" data-log="${td}||day">${icon("milk")}นม อาการ การนอน</button></div>
   </div>
-  <div class="card">${A.cardHead("วันนี้", "บันทึกหลังมื้อได้ ไม่ต้องหยิบมือถือระหว่างที่ลูกกิน")}
-    <div class="today">${MEALS.map(M=>slot(td,M)).join("")}${dailySlot(td)}</div></div>
   <div class="sec-h"><div><h2>สรุป ${A.rangeLabel()}</h2><p>${dates.length?`${thShort(dates[0])} – ${thShort(dates[dates.length-1])} · ${dates.length} วันที่มีข้อมูล`:"ยังไม่มีข้อมูลในช่วงนี้"}</p></div></div>
   <div class="g4">
-    ${kpi(p==null?"":A.lev(s.p), "check", "กินได้จากเมนูที่เสิร์ฟ", p==null?"–":`${p}<small>%</small>`, s.k?`${s.ok} จาก ${s.k} รายการ · ไม่กิน/คาย ${s.no}`:"ยังไม่มีรายการอาหาร")}
+    ${kpi(p==null?"":A.lev(s.p), "check", "กินอาหารได้", p==null?"–":`${p}<small>%</small>`, s.k?`${s.ok} จาก ${s.k} รายการ`:"ยังไม่มีรายการอาหาร")}
     ${kpi(n.estMeals.length?n.R.kcal.lev:"", "spark", "พลังงานเฉลี่ยต่อวัน", n.estMeals.length?`${Math.round(n.day.kcal)}<small> / ${n.req.kcal} kcal</small>`:"–", n.estMeals.length?(n.milkKnown?`${n.R.kcal.p}% ของความต้องการ`:`จากมื้อหลัก ${n.R.kcal.p}% · ยังไม่รวมนม`):"ยังไม่มีปริมาณที่กิน")}
-    ${kpi(s.sitMed==null?"":s.sitMed>=15?"good":s.sitMed>=8?"warn":"bad", "clock", "นั่งกินต่อเนื่องนานสุด (มัธยฐาน)", s.sitMed==null?"–":`${Math.round(s.sitMed)}<small> นาที</small>`, s.sitN?`จาก ${s.sitN} มื้อ (คลิปและบันทึก)`:"ยังไม่มีข้อมูล")}
+    ${kpi(s.sitMed==null?"":s.sitMed>=15?"good":s.sitMed>=8?"warn":"bad", "clock", "นั่งกินต่อเนื่องนานสุด", s.sitMed==null?"–":`${Math.round(s.sitMed)}<small> นาที</small>`, s.sitN?`จาก ${s.sitN} มื้อ`:"ยังไม่มีข้อมูล")}
     ${kpi(s.milkAvg==null?"warn":"", "milk", "นมเฉลี่ยต่อวัน", s.milkAvg==null?"–":`${s.milkAvg}<small> มล.</small>`, s.milkAvg==null?"ยังไม่มีบันทึกปริมาณนม":`จาก ${s.milkDays.length} วัน · เป้าราว 2 กล่อง/วัน`)}
   </div>
   <div class="g-21">

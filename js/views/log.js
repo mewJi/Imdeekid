@@ -4,6 +4,14 @@ const A = window.App, {$,$$,esc,icon,S,MEALS,MEAL,CATS,UNITS,FEED,BEHAV,MOOD,SYM
 const GRP_U = {carb:"ทัพพี", protein:"ช้อนกินข้าว", veg:"ทัพพี", fruit:"ส่วน"};
 const GRP_N = {carb:"ข้าว-แป้ง", protein:"เนื้อสัตว์ ไข่ ถั่ว", veg:"ผัก", fruit:"ผลไม้"};
 const R = {tab:"meal", d:null, k:null, e:null, l:null, open:{}};
+/* ภาพประกอบมื้อ (SVG น่ารัก มีสีในตัว): เช้า = ตะวันโผล่เหนือเนิน, กลางวัน = ตะวันยิ้ม, เย็น = พระจันทร์เสี้ยวง่วงๆ กับดาว */
+const FACE = '<g fill="#5b3a29"><circle cx="20" cy="Y1" r="1.4"/><circle cx="28" cy="Y1" r="1.4"/></g><path d="M22 Y2q2 2.2 4 0" stroke="#5b3a29" stroke-width="1.4" fill="none" stroke-linecap="round"/><g fill="#FF8FA3" opacity=".85"><circle cx="17.2" cy="Y3" r="1.9"/><circle cx="30.8" cy="Y3" r="1.9"/></g>';
+const face = (y1,y2,y3) => FACE.replace(/Y1/g,y1).replace(/Y2/g,y2).replace(/Y3/g,y3);
+const MART = {
+  bk: `<svg class="mart" viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="mc-bk"><circle cx="24" cy="24" r="24"/></clipPath></defs><g clip-path="url(#mc-bk)"><rect width="48" height="48" fill="#FFE3C2"/><g stroke="#FF9F43" stroke-width="2.4" stroke-linecap="round"><path d="M24 11v3.5M12.5 16.5l2.5 2.5M35.5 16.5L33 19M7 28h3.5M37.5 28H41"/></g><circle cx="24" cy="28" r="10" fill="#FFC93C"/>${face(26,29,29.5)}<path d="M0 38Q12 31 24 36T48 35V48H0z" fill="#7BCB8F"/><path d="M0 43Q14 38 28 42T48 41V48H0z" fill="#5FB878"/></g></svg>`,
+  ln: `<svg class="mart" viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="mc-ln"><circle cx="24" cy="24" r="24"/></clipPath></defs><g clip-path="url(#mc-ln)"><rect width="48" height="48" fill="#CDEBFF"/><g stroke="#FF9F43" stroke-width="2.4" stroke-linecap="round"><path d="M24 8v3.5M24 40v-3.5M8 24h3.5M40 24h-3.5M12.7 12.7l2.5 2.5M35.3 12.7l-2.5 2.5M12.7 35.3l2.5-2.5M35.3 35.3l-2.5-2.5"/></g><circle cx="24" cy="24" r="9.5" fill="#FFC93C"/>${face(22.5,25.5,26)}</g></svg>`,
+  dn: `<svg class="mart" viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="mc-dn"><circle cx="24" cy="24" r="24"/></clipPath></defs><g clip-path="url(#mc-dn)"><rect width="48" height="48" fill="#4A4E9C"/><path d="M31 9A15 15 0 1 0 40 33 12.5 12.5 0 0 1 31 9z" fill="#FFE27A"/><g stroke="#5b3a29" stroke-width="1.4" fill="none" stroke-linecap="round"><path d="M15 24q1.7 1.7 3.4 0M21 27.5q1.7 1.7 3.4 0"/><path d="M17.5 31q1.8 1.6 3.6 0"/></g><g fill="#FF8FA3" opacity=".85"><circle cx="13" cy="28.5" r="1.8"/><circle cx="25.8" cy="31.5" r="1.6"/></g><path d="M37 12l1 2.4 2.4 1-2.4 1-1 2.4-1-2.4-2.4-1 2.4-1z" fill="#FFF5B0"/><g fill="#fff"><circle cx="11" cy="12" r="1.1"/><circle cx="40" cy="26" r="1"/><circle cx="35" cy="40" r="1.2"/></g></g></svg>`,
+};
 const whoList = cur => { const m=[...A.members()]; if(cur && !m.includes(cur)) m.push(cur); return m; }; // รายชื่อผู้บันทึก + คนที่เคยบันทึกไว้ (กันค่าเดิมหาย)
 const lastWho = () => A.LS.get("who") || A.members()[0];
 
@@ -25,7 +33,7 @@ A.openLog = ({date, meal, tab}={}) => {
 A.closeLog = (force) => {
   if(!$("#sheet").classList.contains("on")) return;
   if(A.logDirty && !force){ const m=$("#lmsg"); if(m && m.dataset.warn!=="1"){ m.dataset.warn="1"; m.textContent="ยังไม่ได้บันทึก กดปิดอีกครั้งเพื่อทิ้งการแก้ไข"; return; } }
-  $("#sheet").classList.remove("on"); document.body.style.overflow=""; A.logDirty=false;
+  closeWhoModal(); $("#sheet").classList.remove("on"); document.body.style.overflow=""; A.logDirty=false;
 };
 const opts = (name, list, sel, multi) => `<div class="opts" data-name="${name}" data-multi="${multi?1:0}">${list.map(o=>{ const v=Array.isArray(o)?o[0]:o, l=Array.isArray(o)?o[1]:o; const on = multi ? (sel||[]).includes(v) : sel===v; return `<button type="button" class="opt" aria-pressed="${on}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
 const yn = (name, v) => opts(name, [["yes","มี / ใช่"],["no","ไม่มี / ไม่ใช่"]], v===true?"yes":v===false?"no":"");
@@ -35,6 +43,11 @@ function knownFoods(){
   Object.values(S.entries).forEach(e=>(e.items||[]).forEach(i=>add(i.n)));
   return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
 }
+/* แต่ละประเภทบันทึกเป็น sheet ของตัวเอง (ไม่มีแถบแท็บสลับ) — ชื่อหัวและไอคอนตามประเภท */
+const TYPEINFO = {
+  meal:{t:"บันทึกมื้ออาหาร", ic:"bowl"}, milk:{t:"บันทึกนม", ic:"milk"}, snack:{t:"บันทึกของว่าง", ic:"snack"},
+  sleep:{t:"บันทึกการนอน", ic:"moon"}, health:{t:"บันทึกอาการและการขับถ่าย", ic:"thermo"}, body:{t:"บันทึกน้ำหนักและส่วนสูง", ic:"scale"},
+};
 const DAYTABS = [["milk","นม"],["snack","ของว่าง"],["sleep","การนอน"],["health","สุขภาพและการขับถ่าย"],["body","น้ำหนักและส่วนสูง"]];
 const BOX = [110,125,180,200];
 const lastBox = () => { try{ return +localStorage.getItem("imdee:box")||""; }catch(_){ return ""; } };
@@ -55,11 +68,62 @@ function milkRow(m, ix){
     ${box?`<b class="m-tot num">${tot?`= ${tot} มล.`:'<span class="tiny" style="color:var(--warn)">เลือกขนาดกล่อง</span>'}</b>`:""}
     <button type="button" class="icbtn m-del" aria-label="ลบรอบนม">${icon("x")}</button></div>`;
 }
+/* ผู้บันทึก: ถ้าเกิน 1 บรรทัด ให้ย่อเหลือบรรทัดเดียว + ปุ่ม "ดูเพิ่ม" (กดเพื่อขยาย/ย่อ) */
+function fitWho(){
+  $$('#sheet-panel .opts[data-name="who"]').forEach(box=>{
+    box.querySelectorAll(".opt-more").forEach(b=>b.remove());
+    const all=[...box.querySelectorAll(".opt")], add=box.querySelector(".opt-add"), chips=all.filter(k=>k!==add);
+    all.forEach(k=>{ k.hidden=false; });
+    const wraps=()=>{ const v=[...box.children].filter(c=>!c.hidden); return v.length>1 && v[v.length-1].offsetTop > v[0].offsetTop+4; };
+    if(!wraps()) return;
+    const more=document.createElement("button"); more.type="button"; more.className="opt opt-more"; box.appendChild(more);
+    more.textContent="ดูเพิ่ม"; more.setAttribute("aria-haspopup","dialog"); if(add) add.hidden=true;
+    for(let i=chips.length-1; i>=0 && wraps(); i--) if(chips[i].getAttribute("aria-pressed")!=="true") chips[i].hidden=true;
+  });
+}
+/* modal เลือกผู้บันทึก (เปิดจากปุ่ม "ดูเพิ่ม") */
+function openWhoPicker(){
+  closeWhoModal(); read();
+  const cur=(R.tab==="meal"?R.e:R.l).by;
+  const m=document.createElement("div"); m.id="who-modal"; m.className="whomodal"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card"><h3 id="wm-title">เลือกผู้บันทึก</h3><div class="wm-list">${whoList(cur).map(n=>`<button type="button" class="opt wm-opt" data-who="${esc(n)}" aria-pressed="${n===cur}">${esc(n)}</button>`).join("")}</div><div class="wm-act"><button type="button" class="btn opt-add">+ เพิ่มชื่อใหม่</button><button type="button" class="btn" data-wm-close>ปิด</button></div></div>`;
+  $("#sheet").appendChild(m); const f=m.querySelector('[aria-pressed="true"]')||m.querySelector(".wm-opt"); if(f) f.focus();
+}
+function closeWhoModal(){ $$("#sheet .whomodal").forEach(m=>m.remove()); }
+/* modal เพิ่มอาหารที่เสิร์ฟ: ชื่อ หมวด จำนวน หน่วย + ส่วนประกอบ (กรอกใน modal แล้วกด "เพิ่มรายการ") */
+const imCompRow = () => `<div class="im-comp"><div class="im-comp-h"><input class="inp im-cn" placeholder="ส่วนประกอบ เช่น เส้น แซลมอน ซอส" aria-label="ส่วนประกอบ" list="food-list" autocomplete="off"><button type="button" class="icbtn im-cdel" aria-label="ลบส่วนประกอบ">${icon("x")}</button></div><div class="im-grid">${catSel("im-cg","","")}<input class="inp num im-csa" inputmode="decimal" placeholder="จำนวน" aria-label="จำนวนส่วนประกอบ">${unitSel("im-csu","","ช้อน")}</div></div>`;
+function openItemModal(){
+  closeWhoModal();
+  const m=document.createElement("div"); m.id="item-modal"; m.className="whomodal top"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide"><h3 id="wm-title">เพิ่มอาหารที่เสิร์ฟ</h3>
+    <label class="field">ชื่ออาหารหรือเมนู<input class="inp" id="im-n" list="food-list" placeholder="เช่น ข้าวสวย ไข่ต้ม สปาเก็ตตี้" autocomplete="off" enterkeyhint="done"></label>
+    <label class="field">หมวด${catSel("", "", "").replace('class="inp "','class="inp" id="im-g"')}</label>
+    <div class="field">ปริมาณที่เสิร์ฟ<div class="im-grid2"><input class="inp num" id="im-sa" inputmode="decimal" placeholder="จำนวน" aria-label="จำนวนที่เสิร์ฟ">${unitSel("", "", "").replace('class="inp "','class="inp" id="im-su"')}</div></div>
+    <div class="im-comps" id="im-comps"></div>
+    <button type="button" class="ctog" id="im-addc">+ แตกส่วนประกอบของเมนูนี้</button>
+    <p class="tiny" id="im-err" style="margin:0;color:var(--bad)" hidden>ใส่ชื่ออาหารก่อน</p>
+    <div class="wm-act"><button type="button" class="btn" data-wm-close>ยกเลิก</button><button type="button" class="btn primary" id="im-ok">เพิ่มรายการ</button></div></div>`;
+  $("#sheet").appendChild(m); const x=$("#im-n"); if(x) x.focus();
+}
+function submitItem(){
+  const n=($("#im-n")||{}).value.trim(), err=$("#im-err");
+  if(!n){ if(err) err.hidden=false; const x=$("#im-n"); if(x) x.focus(); return; }
+  const it=newItem(n); it.g=$("#im-g").value; it.sa=$("#im-sa").value.trim(); it.su=$("#im-su").value;
+  it.comps=$$("#im-comps .im-comp").map(r=>({n:r.querySelector(".im-cn").value.trim(), g:r.querySelector(".im-cg").value, sa:r.querySelector(".im-csa").value.trim(), su:r.querySelector(".im-csu").value})).filter(c=>c.n);
+  readMeal(); R.e.items.push(it); A.logDirty=true; closeWhoModal(); redraw();
+  const rows=$$("#l-items .sitem"); if(rows.length) rows[rows.length-1].scrollIntoView({block:"nearest"});
+}
+function openWhoModal(){
+  closeWhoModal();
+  const m=document.createElement("div"); m.id="who-modal"; m.className="whomodal"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card"><h3 id="wm-title">เพิ่มผู้บันทึก</h3><input class="inp" id="l-newwho" placeholder="เช่น ปู่ ย่า พี่เลี้ยง" aria-label="ชื่อผู้บันทึกใหม่" maxlength="30" autocomplete="off"><p class="tiny" style="margin:0">แก้หรือลบรายชื่อได้ที่ ตั้งค่า</p><div class="wm-act"><button type="button" class="btn" data-wm-close>ยกเลิก</button><button type="button" class="btn primary" id="l-newwho-ok">เพิ่ม</button></div></div>`;
+  $("#sheet").appendChild(m); const x=$("#l-newwho"); if(x) x.focus();
+}
 async function addWho(){
   const x=$("#l-newwho"), name=x?x.value.trim():""; if(!name) return;
   read(); const mem=[...A.members()]; if(!mem.includes(name)) mem.push(name);
   S.settings.members = mem; await A.save("app/settings", JSON.parse(JSON.stringify(S.settings)));
-  (R.tab==="meal"?R.e:R.l).by = name; A.LS.set("who", name); R.addWho=false; A.emit("settings"); redraw();
+  (R.tab==="meal"?R.e:R.l).by = name; A.LS.set("who", name); closeWhoModal(); A.emit("settings"); redraw();
 }
 function sec(id, n, title, hint, body, ok){ const open = R.open[id]!==undefined ? R.open[id] : true; return `<details class="fsec" data-sec="${id}"${open?" open":""}><summary><span class="n">${n}</span>${title}<span class="hint${ok?" ok":""}">${hint||""}</span></summary><div class="fsec-b">${body}</div></details>`; }
 const num = v => { const x=parseFloat(String(v??"").replace(",",".")); return isFinite(x)?x:null; };
@@ -133,13 +197,13 @@ function photoSlot(k,lbl){
 }
 function draw(){
   const P=$("#sheet-panel"), e=R.e, l=R.l, ex=!!S.entries[R.d+"_"+R.k];
-  const hd = `<div class="sheet-h"><h2 id="sheet-title">บันทึกการกิน</h2><button class="icbtn" data-close aria-label="ปิด">${icon("x")}</button></div>`;
-  let b = `<div class="frow"><label class="field">วันที่<input type="date" id="l-date" value="${R.d}" max="${today()}"></label><div class="field">ผู้บันทึก${opts("who", whoList(R.tab==="meal"?e.by:l.by), R.tab==="meal"?e.by:l.by).replace(/<\/div>$/, `<button type="button" class="opt opt-add" aria-expanded="${!!R.addWho}">+ เพิ่ม</button></div>`)}${R.addWho?`<div class="addwho"><input class="inp" id="l-newwho" placeholder="เช่น ปู่ ย่า พี่เลี้ยง" aria-label="ชื่อผู้บันทึกใหม่"><button type="button" class="btn sm primary" id="l-newwho-ok">เพิ่ม</button></div><span class="tiny">แก้หรือลบรายชื่อได้ที่ ตั้งค่า</span>`:""}</div></div>`;
-  b += `<div style="margin-top:10px;min-width:0">${A.seg("ltab", [["meal","มื้ออาหาร"], ...DAYTABS.map(([v,lab])=>[v, lab+(tabHas(v,l)?' <i class="tdot"></i>':"")])], R.tab, "ltabs")}</div>`;
+  const ti = TYPEINFO[R.tab] || TYPEINFO.meal;
+  const hd = `<div class="sheet-h"><h2 id="sheet-title"><span class="sh-ic">${icon(ti.ic)}</span>${ti.t}</h2><button class="icbtn" data-close aria-label="ปิด">${icon("x")}</button></div>`;
+  let b = `<div class="frow"><label class="field">วันที่<input type="date" id="l-date" value="${R.d}" max="${today()}"></label><div class="field">ผู้บันทึก${opts("who", whoList(R.tab==="meal"?e.by:l.by), R.tab==="meal"?e.by:l.by).replace(/<\/div>$/, `<button type="button" class="opt opt-add" aria-haspopup="dialog">+ เพิ่ม</button></div>`)}</div></div>`;
   let f;
   if(R.tab==="meal"){
     const base=(A.base().meals[R.d]||{})[R.k];
-    b += `<div class="field" style="margin-top:10px">มื้อ${opts("meal", MEALS.map(M=>[M.k,M.short]), R.k)}</div>`;
+    b += `<div class="field" style="margin-top:10px">มื้อ<div class="opts mealpick" data-name="meal" data-multi="0" role="group" aria-label="มื้อ">${MEALS.map(M=>`<button type="button" class="opt" aria-pressed="${R.k===M.k}" data-v="${M.k}">${MART[M.k]||icon("bowl")}<b>${esc(M.short)}</b></button>`).join("")}</div></div>`;
     if(ex) b += `<p class="tiny">กำลังแก้ไขบันทึกเดิมของ${MEAL[R.k].name}</p>`; else if(base&&base.items) b += `<p class="tiny">เติมรายการอาหารจากข้อมูลเดิมไว้ให้แล้ว แก้หรือเพิ่มได้</p>`;
     let no = 0;
     if(!R.mode){
@@ -163,7 +227,7 @@ function draw(){
     const dur = e.start&&e.end ? ((toMin(e.end)-toMin(e.start))+1440)%1440 : null;
     const named = e.items.filter(i=>i.n), nItems = named.length, nDone = named.filter(itemDone).length;
     b += sec("served",++no,"อาหารที่เสิร์ฟ", nItems?`${nItems} รายการ`:"ขั้นที่ 1", `
-      <select class="inp" id="l-quickfood" aria-label="เลือกเมนูที่เคยบันทึก"><option value="">+ เลือกเมนูที่เคยบันทึก</option>${knownFoods().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("")}</select>
+      <div class="combo" id="l-combo"><span class="combo-ic">${icon("search")}</span><input class="inp combo-in" id="l-quickfood" type="text" role="combobox" aria-expanded="false" aria-controls="l-foodlist" aria-autocomplete="list" autocomplete="off" enterkeyhint="search" placeholder="ค้นหาเมนูที่เคยบันทึก" aria-label="ค้นหาเมนูที่เคยบันทึก"><ul class="combo-list" id="l-foodlist" role="listbox" hidden></ul></div>
       <datalist id="food-list">${knownFoods().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
       <div style="display:grid;gap:8px" id="l-items">${e.items.map(servedRow).join("")}</div>
       <button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button>
@@ -349,16 +413,54 @@ async function addPhoto(input){
   catch(_){ if(um) um.textContent="อัปโหลดรูปไม่สำเร็จ ลองใหม่"; }
 }
 const panel = $("#sheet");
-panel.addEventListener("keydown", ev=>{ if(ev.target.id==="l-newwho" && ev.key==="Enter"){ ev.preventDefault(); addWho(); } });
+panel.addEventListener("keydown", ev=>{ if(!ev.target.closest || !ev.target.closest("#who-modal")) return; if(ev.key==="Enter"){ ev.preventDefault(); addWho(); } else if(ev.key==="Escape"){ ev.stopPropagation(); closeWhoModal(); } });
 panel.addEventListener("toggle", ev=>{ const d=ev.target.closest&&ev.target.closest("details.fsec"); if(d) R.open[d.dataset.sec]=d.open; }, true);
+/* ช่องค้นหาเมนูที่เคยบันทึก: พิมพ์กรอง, ↑↓ Enter เลือก, Esc ปิดรายการ */
+const foodEl = () => $("#l-foodlist"), foodIn = () => $("#l-quickfood");
+function hideFoodList(){ const l=foodEl(), i=foodIn(); if(l){ l.hidden=true; l.innerHTML=""; } if(i){ i.setAttribute("aria-expanded","false"); i.removeAttribute("aria-activedescendant"); } }
+function renderFoodList(){
+  const l=foodEl(), i=foodIn(); if(!l||!i) return;
+  const raw=i.value.trim(), q=raw.toLowerCase(), all=knownFoods();
+  const hit=(q?all.filter(n=>n.toLowerCase().includes(q)):all).slice(0,60);
+  let h=hit.map((n,k)=>`<li role="option" class="combo-opt" id="fo-${k}" data-food="${esc(n)}">${esc(n)}</li>`).join("");
+  if(raw && !all.some(n=>n.toLowerCase()===q)) h+=`<li role="option" class="combo-opt combo-new" id="fo-new" data-food="${esc(raw)}">+ เพิ่ม “${esc(raw)}” เป็นเมนูใหม่</li>`;
+  if(!h) h=`<li class="combo-empty" role="presentation">ยังไม่มีเมนูที่เคยบันทึก พิมพ์ชื่อเมนูในช่องด้านล่างได้เลย</li>`;
+  l.innerHTML=h; l.hidden=false; i.setAttribute("aria-expanded","true"); i.removeAttribute("aria-activedescendant");
+}
+function moveFood(d){
+  const l=foodEl(), i=foodIn(); if(!l||l.hidden) { renderFoodList(); return; }
+  const o=[...l.querySelectorAll(".combo-opt")]; if(!o.length) return;
+  let k=o.findIndex(x=>x.getAttribute("aria-selected")==="true"); o.forEach(x=>x.removeAttribute("aria-selected"));
+  k = k<0 ? (d>0?0:o.length-1) : (k+d+o.length)%o.length;
+  o[k].setAttribute("aria-selected","true"); o[k].scrollIntoView({block:"nearest"}); i.setAttribute("aria-activedescendant", o[k].id);
+}
+function addFood(n){ n=(n||"").trim(); if(!n) return; readMeal(); if(!R.e.items.some(i=>i.n===n)) R.e.items.push(newItem(n)); A.logDirty=true; redraw(); }
+panel.addEventListener("keydown", ev=>{
+  if(!ev.target.closest || !ev.target.closest("#item-modal")) return;
+  if(ev.key==="Escape"){ ev.stopPropagation(); closeWhoModal(); }
+  else if(ev.key==="Enter" && ev.target.tagName==="INPUT"){ ev.preventDefault(); submitItem(); }
+});
+panel.addEventListener("focusin", ev=>{ if(ev.target.id==="l-quickfood") renderFoodList(); });
+panel.addEventListener("keydown", ev=>{
+  if(ev.target.id!=="l-quickfood") return; const l=foodEl(), open=l&&!l.hidden;
+  if(ev.key==="ArrowDown"){ ev.preventDefault(); moveFood(1); }
+  else if(ev.key==="ArrowUp"){ ev.preventDefault(); moveFood(-1); }
+  else if(ev.key==="Enter"){ ev.preventDefault(); const o=open&&(l.querySelector('[aria-selected="true"]')||l.querySelector(".combo-opt")); if(o) addFood(o.dataset.food); }
+  else if(ev.key==="Escape" && open){ ev.stopPropagation(); hideFoodList(); }
+});
 panel.addEventListener("click", ev=>{
   const t=ev.target;
+  if(!t.closest("#l-combo")) hideFoodList();
+  const fo=t.closest(".combo-opt"); if(fo){ addFood(fo.dataset.food); return; }
   if(t.closest("[data-close]")) return A.closeLog();
   const sg=t.closest('[data-seg="ltab"] button'); if(sg){ read(); R.tab=sg.dataset.v; redraw(); return; }
   if(t.closest("#l-addsleep")){ readDay(); const now=nowHM(); R.l.sleeps.push({p:A.sleepPeriod(now), s:now, e:""}); A.logDirty=true; redraw(); return; }
   if(t.closest(".sl-del")){ readDay(); R.l.sleeps.splice(+t.closest(".slrow").dataset.ix,1); A.logDirty=true; redraw(); return; }
   const spb=t.closest("[data-sp]"); if(spb){ readDay(); R.l.sleeps[+spb.closest(".slrow").dataset.ix].p=spb.dataset.sp; A.logDirty=true; redraw(); return; }
-  if(t.closest(".opt-add")){ read(); R.addWho=!R.addWho; redraw(); const x=$("#l-newwho"); if(x) x.focus(); return; }
+  const wo=t.closest("[data-who]"); if(wo){ (R.tab==="meal"?R.e:R.l).by=wo.dataset.who; A.logDirty=true; closeWhoModal(); redraw(); return; }
+  if(t.closest(".opt-more")){ openWhoPicker(); return; }
+  if(t.closest(".opt-add")){ read(); openWhoModal(); return; }
+  if(t.closest("[data-wm-close]")){ closeWhoModal(); return; }
   if(t.closest("#l-newwho-ok")) return addWho();
   const op=t.closest(".opt"); if(op){ const set=op.closest(".opts"), name=set.dataset.name, multi=set.dataset.multi==="1", v=op.dataset.v; read();
     if(name==="meal"){ R.k=v; load(); draw(); return; }
@@ -381,7 +483,10 @@ panel.addEventListener("click", ev=>{
   const st=t.closest(".stseg button"); if(st && st.dataset.st && t.closest(".item")){ readItems(); R.e.items[+st.closest(".item").dataset.ix].st=st.dataset.st; A.logDirty=true; redraw(); return; }
   if(t.closest(".in-del")){ readItems(); R.e.items.splice(ix(t),1); A.logDirty=true; redraw(); return; }
   const af=t.closest("[data-addf]"); if(af){ readMeal(); const n=af.dataset.addf; if(!R.e.items.some(i=>i.n===n)) R.e.items.push(newItem(n)); A.logDirty=true; redraw(); return; }
-  if(t.closest("#l-additem")){ readMeal(); R.e.items.push(newItem()); redraw(); const ins=$$("#l-items .in-n"); ins[ins.length-1].focus(); return; }
+  if(t.closest("#l-additem")){ readMeal(); openItemModal(); return; }
+  if(t.closest("#im-addc")){ const c=$("#im-comps"); c.insertAdjacentHTML("beforeend", imCompRow()); const r=c.lastElementChild.querySelector(".im-cn"); if(r) r.focus(); return; }
+  if(t.closest(".im-cdel")){ t.closest(".im-comp").remove(); return; }
+  if(t.closest("#im-ok")){ submitItem(); return; }
   const nw=t.closest("[data-now]"); if(nw){ $("#"+nw.dataset.now).value=nowHM(); readMeal(); A.logDirty=true; redraw(); return; }
   const sp=t.closest("[data-step]"); if(sp){ const i=panel.querySelector(`.in-grp[data-g="${sp.dataset.step}"]`); i.value=Math.max(0,(parseFloat(i.value)||0)+parseFloat(sp.dataset.d)); readMeal(); if(!R.e.trust) R.e.trust="manual"; A.logDirty=true; redraw(); return; }
   if(t.closest("#l-aibtn")) return aiEstimate();
@@ -400,7 +505,12 @@ panel.addEventListener("click", ev=>{
 panel.addEventListener("change", ev=>{
   const t=ev.target;
   if(t.tagName==="SELECT") t.blur(); // เลือกแล้วปิด dropdown/picker ทันที ไม่ให้ค้างบนมือถือ
-  if(t.id==="l-quickfood"){ const n=t.value; if(!n) return; readMeal(); if(!R.e.items.some(i=>i.n===n)) R.e.items.push(newItem(n)); A.logDirty=true; redraw(); return; }
+  if(t.closest && t.closest("#item-modal")){ // ช่องใน modal เพิ่มอาหาร: ไม่นับเป็นการแก้ข้อมูลจนกว่าจะกด "เพิ่มรายการ"
+    if(t.id==="im-g"||t.classList.contains("im-cg")) t.dataset.touched="1";
+    else if(t.id==="im-n"){ const g=$("#im-g"); if(g&&!g.dataset.touched) g.value=A.guessCat(t.value); }
+    else if(t.classList.contains("im-cn")){ const g=t.closest(".im-comp").querySelector(".im-cg"); if(g&&!g.dataset.touched) g.value=A.guessCat(t.value); }
+    return; }
+  if(t.id==="l-quickfood") return; // ช่องค้นหาเมนู: ไม่นับเป็นการแก้ข้อมูล
   if(t.id==="l-date"){ if(!t.value) return; R.d=t.value; load(); draw(); return; }
   if(t.type==="file") return addPhoto(t);
   if(t.classList.contains("in-n") && t.closest(".sitem")){ t.closest(".sitem").querySelector(".in-g").value=A.guessCat(t.value); }
@@ -409,7 +519,9 @@ panel.addEventListener("change", ev=>{
   read(); if(t.classList.contains("in-grp") && !R.e.trust && t.value!==""){ R.e.trust="manual"; redraw(); }
   A.logDirty=true;
 });
-panel.addEventListener("input", ev=>{ A.logDirty=true;
+panel.addEventListener("input", ev=>{ if(ev.target.id==="l-quickfood"){ renderFoodList(); return; }
+  if(ev.target.closest && ev.target.closest("#item-modal")){ const t=ev.target, e2=$("#im-err"); if(t.id==="im-n"){ if(e2) e2.hidden=true; const g=$("#im-g"); if(g&&!g.dataset.touched) g.value=A.guessCat(t.value); } return; }
+  A.logDirty=true;
   if(ev.target.closest && ev.target.closest("#l-items,#l-eaten")){ readItems(); const r=ev.target.closest(".sitem"); if(r){ const i=R.e.items[+r.dataset.ix], er=$(`#l-eaten .eitem[data-ix="${r.dataset.ix}"] .e-name`); if(er) er.textContent=i.n||"(ยังไม่ใส่ชื่อ)"; } const sm=$("#l-sum"); if(sm) sm.innerHTML=sumHTML(); $$("#l-eaten .eitem").forEach(r=>{ const c=r.querySelector(".conv"); if(c) c.innerHTML=convHTML(R.e.items[+r.dataset.ix]); }); }
   const r=ev.target.closest&&ev.target.closest("#l-milk .mrow"); if(!r) return;
   readDay(); const m=R.l.milk[+r.dataset.ix];
@@ -417,5 +529,6 @@ panel.addEventListener("input", ev=>{ A.logDirty=true;
   const tb=r.querySelector(".m-tot"); if(tb) tb.innerHTML = m.ml?`= ${m.ml} มล.`:'<span class="tiny" style="color:var(--warn)">เลือกขนาดกล่อง</span>';
   const ms=R.l.milk.reduce((a,x)=>a+(+x.ml||0),0), h=$('details[data-sec="milk"] .hint'); if(h){ h.textContent = ms?`รวม ${ms} มล.`:""; h.classList.toggle("ok", ms>0); }
 });
+{ const pn=$("#sheet-panel"); if(pn) new MutationObserver(fitWho).observe(pn,{childList:true}); window.addEventListener("resize", fitWho); if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitWho); }
 window.addEventListener("beforeunload", e=>{ if(A.logDirty){ e.preventDefault(); e.returnValue=""; } });
 })();
