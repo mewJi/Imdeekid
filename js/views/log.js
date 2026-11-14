@@ -218,6 +218,7 @@ function hintFor(id){
   const e=R.e, l=R.l;
   if(id==="served"){ const n=e.items.filter(i=>i.n).length; return reqTag(n>0,"จำเป็น", n?`${n} รายการ`:""); }
   if(id==="eaten"){ const named=e.items.filter(i=>i.n), d=named.filter(itemDone).length; return reqTag(d>0,"จำเป็น", named.length?`${d}/${named.length} รายการ`:""); }
+  if(id==="time"){ const dur = e.start&&e.end ? ((toMin(e.end)-toMin(e.start))+1440)%1440 : null; return reqTag(!!(e.start||e.end),"จำเป็น", dur!=null?`รวม ${dur} นาที`:""); }
   if(id==="milk"){ const ms=milkSum(l); return reqTag(ms>0||num(l.water)>0,"จำเป็น", ms?`รวม ${ms} มล.`:""); }
   if(id==="snack"){ const n=(l.snacks||[]).filter(s=>s.n).length; return reqTag(n>0,"จำเป็น", n?`${n} รายการ`:""); }
   if(id==="nap"){ const sl=l.sleeps||[], n=sl.filter(x=>x.s).length; return reqTag(n>0,"จำเป็น", n?`${n} รอบ`:""); }
@@ -233,6 +234,9 @@ function validateLog(){
     if(!items.length) missing.push("อาหารที่เสิร์ฟ");
     else if(items.some(i=>!i.st)) missing.push("ติ๊กว่ากินหรือไม่กิน");
     else if(items.some(i=>!itemDone(i))) missing.push("ปริมาณที่กิน");
+    const okT = v => /^\d{2}:\d{2}$/.test(v||"");
+    if(!okT(e.start)) missing.push("เวลาเริ่ม");
+    if(!okT(e.end)) missing.push("เวลาจบ");
   } else if(R.tab==="milk"){
     if(!(milkSum(l)>0 || num(l.water)>0)) missing.push("ปริมาณนมหรือน้ำเปล่า");
     if((l.milk||[]).some(m=>m.u==="box" && +m.n && !m.box)) missing.push("ขนาดกล่องนม");
@@ -256,7 +260,7 @@ function refreshSave(){
   btn.disabled = !v.ok || !S.canWrite;
   btn.title = v.ok ? "" : "ยังต้องกรอก: "+v.missing.join(" · ");
   const m=$("#lmsg"); if(m && S.canWrite){ const cur=m.textContent||""; if(!cur || cur.startsWith("ยังต้องกรอก")) m.textContent = v.ok ? "" : "ยังต้องกรอก: "+v.missing.join(" · "); }
-  ["served","eaten","milk","snack","nap","sym","body"].forEach(id=>{ const h=$(`details[data-sec="${id}"] .hint`); if(h) h.innerHTML=hintFor(id); });
+  ["served","eaten","time","milk","snack","nap","sym","body"].forEach(id=>{ const h=$(`details[data-sec="${id}"] .hint`); if(h) h.innerHTML=hintFor(id); });
 }
 function draw(){
   const P=$("#sheet-panel"), e=R.e, l=R.l, ex=!!S.entries[R.d+"_"+R.k];
@@ -291,7 +295,7 @@ function draw(){
     const named = e.items.filter(i=>i.n), nItems = named.length, nDone = named.filter(itemDone).length;
     b += sec("served",++no,`อาหารที่เสิร์ฟ<button type="button" class="info-btn" data-info="info-served" aria-label="วิธีใส่ปริมาณ" aria-expanded="false">${icon("info")}</button>`, hintFor("served"), `
       <div class="info-note" id="info-served" hidden>ใส่ปริมาณเป็นหน่วยที่ใช้จริงที่บ้าน เช่น 1 ทัพพี 1 ฟอง 5 ชิ้น ไม่ต้องชั่ง · เมนูรวม เช่น สปาเก็ตตี้ครีมซอสแซลมอน กด "แตกส่วนประกอบ" เพื่อแยกเส้น แซลมอน ซอส ผัก</div>
-      <button type="button" class="inp combo-btn" id="l-quickfood" aria-haspopup="dialog">${icon("search")}<span>เลือกหรือค้นหาเมนูที่เคยบันทึก</span></button>
+
       <datalist id="food-list">${knownFoods().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
       <div style="display:grid;gap:8px" id="l-items">${e.items.map(servedRow).join("")}</div>
       <button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button>`, nItems>0);
@@ -299,7 +303,7 @@ function draw(){
       <div style="display:grid;gap:8px" id="l-eaten">${e.items.map((i,ix)=>i.n?eatenRow(i,ix):"").join("")}</div>
       <div><h4 style="margin:6px 0 8px">สรุปมื้อนี้ตาม 5 หมู่</h4><div id="l-sum">${sumHTML()}</div></div>` : `
       <div class="empty" id="l-eaten">${icon("bowl")}<b>กรุณาระบุเมนูอาหารที่เสิร์ฟก่อน</b></div>`, nItems&&nDone===nItems);
-    b += sec("time",++no,"เวลา", dur!=null?`รวม ${dur} นาที`:"", `<div class="frow frow-col">
+    b += sec("time",++no,"เวลา", hintFor("time"), `<div class="frow frow-col">
       <label class="field">เริ่ม<span class="tin"><input ${A.TIME_ATTR} id="l-start" value="${esc(e.start)}"><button type="button" class="btn sm" data-now="l-start">ตอนนี้</button></span></label>
       <label class="field">จบ<span class="tin"><input ${A.TIME_ATTR} id="l-end" value="${esc(e.end)}"><button type="button" class="btn sm" data-now="l-end">ตอนนี้</button></span></label>
       <label class="field">นั่งต่อเนื่องนานสุด (นาที)<input id="l-sit" ${numAttr(e.sitMax)} inputmode="numeric" class="num" value="${esc(e.sitMax)}" placeholder="ประมาณ"></label></div>`, dur!=null);
@@ -496,18 +500,19 @@ panel.addEventListener("toggle", ev=>{ const d=ev.target.closest&&ev.target.clos
 panel.addEventListener("keydown", ev=>{ if(ev.key==="Escape" && $("#sheet .whomodal")){ ev.stopPropagation(); closeWhoModal(); } }, true);
 /* เลือก/ค้นหาเมนูที่เคยบันทึก: เปิดเป็น modal — เห็นรายการก่อน คีย์บอร์ดขึ้นเมื่อแตะช่องค้นหาเท่านั้น จึงไม่บังรายการ */
 function renderFoodPicker(){
-  const l=$("#fp-list"), i=$("#fp-q"); if(!l||!i) return;
+  const l=$("#fp-list"), i=$("#fp-q"), f=$("#fp-foot"); if(!l||!i) return;
   const raw=i.value.trim(), q=raw.toLowerCase(), all=knownFoods();
   const hit=(q?all.filter(n=>n.toLowerCase().includes(q)):all).slice(0,80);
   let h=hit.map((n,k)=>`<li role="option" class="combo-opt" id="fo-${k}" data-food="${esc(n)}">${esc(n)}</li>`).join("");
-  if(raw && !all.some(n=>n.toLowerCase()===q)) h+=`<li role="option" class="combo-opt combo-new" id="fo-new" data-food="${esc(raw)}">+ เพิ่ม “${esc(raw)}” เป็นเมนูใหม่</li>`;
-  if(!h) h=`<li class="combo-empty" role="presentation">ยังไม่มีเมนูที่เคยบันทึก พิมพ์ชื่อเมนูในช่องค้นหาแล้วเลือก “เพิ่มเป็นเมนูใหม่”</li>`;
+  if(!h) h=`<li class="combo-empty" role="presentation">${raw?"ไม่พบเมนูนี้ในรายการที่เคยบันทึก":"ยังไม่มีเมนูที่เคยบันทึก พิมพ์ชื่อเมนูในช่องค้นหา แล้วกด “เพิ่มในรายการ”"}</li>`;
   l.innerHTML=h; i.removeAttribute("aria-activedescendant");
+  const isNew = raw && !all.some(n=>n.toLowerCase()===q);
+  if(f) f.innerHTML = isNew ? `<span class="fp-newtxt">“${esc(raw)}” ยังไม่มีในรายการ</span><button type="button" class="btn primary" id="fp-new">${icon("plus")}เพิ่มในรายการ</button>` : "";
 }
 function openFoodPicker(){
   readMeal(); closeWhoModal();
   const m=document.createElement("div"); m.id="food-modal"; m.className="whomodal top"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
-  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide fp-card"><h3 id="wm-title">เลือกหรือค้นหาเมนูที่เคยบันทึก</h3><div class="combo"><span class="combo-ic">${icon("search")}</span><input class="inp combo-in" id="fp-q" type="text" role="combobox" aria-controls="fp-list" aria-autocomplete="list" autocomplete="off" enterkeyhint="search" placeholder="พิมพ์เพื่อค้นหา" aria-label="ค้นหาเมนูที่เคยบันทึก"></div><ul class="fp-list" id="fp-list" role="listbox"></ul><div class="wm-act"><button type="button" class="btn" data-wm-close>ปิด</button></div></div>`;
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide fp-card"><h3 id="wm-title">เพิ่มอาหารที่เสิร์ฟ</h3><div class="combo"><span class="combo-ic">${icon("search")}</span><input class="inp combo-in" id="fp-q" type="text" role="combobox" aria-controls="fp-list" aria-autocomplete="list" autocomplete="off" enterkeyhint="search" placeholder="เลือกหรือค้นหาเมนูที่เคยบันทึก" aria-label="เลือกหรือค้นหาเมนูที่เคยบันทึก"></div><ul class="fp-list" id="fp-list" role="listbox"></ul><div class="fp-foot" id="fp-foot"></div><div class="wm-act"><button type="button" class="btn" data-wm-close>ปิด</button></div></div>`;
   $("#sheet").appendChild(m); renderFoodPicker();
 }
 function moveFood(d){
@@ -527,14 +532,14 @@ panel.addEventListener("keydown", ev=>{
   if(ev.target.id!=="fp-q") return;
   if(ev.key==="ArrowDown"){ ev.preventDefault(); moveFood(1); }
   else if(ev.key==="ArrowUp"){ ev.preventDefault(); moveFood(-1); }
-  else if(ev.key==="Enter"){ ev.preventDefault(); const l=$("#fp-list"), o=l&&(l.querySelector('[aria-selected="true"]')||l.querySelector(".combo-opt")); if(o) addFood(o.dataset.food); }
+  else if(ev.key==="Enter"){ ev.preventDefault(); const l=$("#fp-list"), o=l&&(l.querySelector('[aria-selected="true"]')||l.querySelector(".combo-opt")); if(o) addFood(o.dataset.food); else addFood($("#fp-q").value); }
   else if(ev.key==="Escape"){ ev.stopPropagation(); closeWhoModal(); }
 });
 panel.addEventListener("click", ev=>{
   const t=ev.target;
   const ib=t.closest("[data-info]"); if(ib){ ev.preventDefault(); const note=$("#"+ib.dataset.info), det=ib.closest("details"); if(note){ if(det) det.open=true; const show=note.hidden; note.hidden=!show; ib.setAttribute("aria-expanded", String(show)); } return; } /* ไอคอน ⓘ: เปิด/ปิดคำอธิบาย (ไม่พับหัวข้อ) */
-  if(t.closest("#l-quickfood")){ openFoodPicker(); return; }
   const fo=t.closest(".combo-opt"); if(fo){ addFood(fo.dataset.food); return; }
+  if(t.closest("#fp-new")){ addFood(($("#fp-q")||{}).value); return; }
   if(t.closest("[data-close]")) return A.closeLog();
   const sg=t.closest('[data-seg="ltab"] button'); if(sg){ read(); R.tab=sg.dataset.v; redraw(); return; }
   if(t.closest("#l-addsleep")){ readDay(); const now=nowHM(); R.l.sleeps.push({p:A.sleepPeriod(now), s:now, e:""}); A.logDirty=true; redraw(); return; }
@@ -567,7 +572,7 @@ panel.addEventListener("click", ev=>{
   const st=t.closest(".stseg button"); if(st && st.dataset.st && t.closest(".item")){ readItems(); R.e.items[+st.closest(".item").dataset.ix].st=st.dataset.st; A.logDirty=true; redraw(); return; }
   if(t.closest(".in-del")){ readItems(); R.e.items.splice(ix(t),1); A.logDirty=true; redraw(); return; }
   const af=t.closest("[data-addf]"); if(af){ readMeal(); const n=af.dataset.addf; if(!R.e.items.some(i=>i.n===n)) R.e.items.push(newItem(n)); A.logDirty=true; redraw(); return; }
-  if(t.closest("#l-additem")){ readMeal(); openItemModal(); return; }
+  if(t.closest("#l-additem")){ openFoodPicker(); return; }
   if(t.closest("#im-addc")){ const c=$("#im-comps"); c.insertAdjacentHTML("beforeend", imCompRow()); imSyncCompUnits(c.lastElementChild); const r=c.lastElementChild.querySelector(".im-cn"); if(r) r.focus(); return; }
   if(t.closest(".im-cdel")){ t.closest(".im-comp").remove(); return; }
   if(t.closest("#im-ok")){ submitItem(); return; }
