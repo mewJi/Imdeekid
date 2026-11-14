@@ -128,7 +128,7 @@ function sumHTML(){
 }
 function photoSlot(k,lbl){
   const list=R.e.photos[k]||[];
-  return `<div class="field">${lbl}<div class="pthumbs">${list.map((p,ix)=>`<span class="pt"><img src="${esc(p.url||"/_blob/"+p.id)}" alt="${lbl} ${ix+1}"><button type="button" data-pk="${k}" data-pix="${ix}" aria-label="เอารูปออก">${icon("x")}</button></span>`).join("")}<label class="padd">${S.assets?`${icon("camera")}<span>เพิ่มรูป</span>`:"เพิ่มรูปได้เมื่อเชื่อมต่อ"}<input type="file" accept="image/*" capture="environment" data-pk="${k}" ${S.assets?"":"disabled"} hidden></label></div></div>`;
+  return `<div class="field">${lbl}<div class="pthumbs">${list.map((p,ix)=>`<span class="pt"><img src="${esc(A.photoUrl(p))}" alt="${lbl} ${ix+1}"><button type="button" data-pk="${k}" data-pix="${ix}" aria-label="เอารูปออก">${icon("x")}</button></span>`).join("")}<label class="padd">${S.assets?`${icon("camera")}<span>เพิ่มรูป</span>`:"เพิ่มรูปได้เมื่อเชื่อมต่อ"}<input type="file" accept="image/*" capture="environment" data-pk="${k}" ${S.assets?"":"disabled"} hidden></label></div></div>`;
 }
 function draw(){
   const P=$("#sheet-panel"), e=R.e, l=R.l, ex=!!S.entries[R.d+"_"+R.k];
@@ -230,7 +230,7 @@ function readDay(){ const l=R.l;
 const read = () => R.tab==="meal" ? readMeal() : readDay();
 const redraw = () => {
   const sb=$("#sheet-b"), y=sb?sb.scrollTop:0, ae=document.activeElement;
-  let key=null; if(ae && sb && sb.contains(ae) && ae.classList.length){ const r=ae.closest("[data-ix]"), c=ae.closest("[data-cx]"), box=ae.closest("#l-items,#l-eaten,#l-milk,#l-snacks"); key={cls:[...ae.classList].find(x=>/^(in|c|ec)-/.test(x)), ix:r&&r.dataset.ix, cx:c&&c.dataset.cx, box:box&&box.id}; }
+  let key=null; if(ae && ae.tagName!=="SELECT" && sb && sb.contains(ae) && ae.classList.length){ const r=ae.closest("[data-ix]"), c=ae.closest("[data-cx]"), box=ae.closest("#l-items,#l-eaten,#l-milk,#l-snacks"); key={cls:[...ae.classList].find(x=>/^(in|c|ec)-/.test(x)), ix:r&&r.dataset.ix, cx:c&&c.dataset.cx, box:box&&box.id}; }
   draw(); const nb=$("#sheet-b"); if(nb) nb.scrollTop=y;
   if(key&&key.cls&&key.box){ const el=$(`#${key.box} ${key.ix!=null?`[data-ix="${key.ix}"] `:""}${key.cx!=null?`[data-cx="${key.cx}"] `:""}.${key.cls}`); if(el) try{ el.focus({preventScroll:true}); }catch(_){} }
 };
@@ -276,7 +276,7 @@ async function aiEstimate(){
   if(!sample){ out.innerHTML=`<p class="tiny">ใช้ AI ไม่ได้ในโหมดนี้ ประเมินเองได้ที่การ์ดซ้าย</p>`; return; }
   const items=e.items.filter(i=>i.n); const blobs=[]; let canImg=false; try{ const lim=await sample.limits(); canImg=!!(lim&&lim.images); }catch(_){}
   const phs=[...(e.photos.before||[]).map(p=>["ก่อนกิน",p]),...(e.photos.after||[]).map(p=>["หลังกิน",p])];
-  if(canImg) for(const [,p] of phs){ try{ const r=await fetch(p.url||("/_blob/"+p.id)); blobs.push(await r.blob()); }catch(_){} }
+  if(canImg) for(const [,p] of phs){ try{ const r=await fetch(A.photoUrl(p)); blobs.push(await r.blob()); }catch(_){} }
   if(!items.length && !blobs.length){ out.innerHTML=`<p class="tiny">ใส่รายการอาหารหรือเพิ่มรูปก่อน แล้วค่อยให้ AI ประเมิน</p>`; return; }
   const age = A.ageText();
   const prompt = `ช่วยประเมินปริมาณอาหารที่เด็กอายุ ${age} กินจริงในหนึ่งมื้อ เพื่อเทียบกับธงโภชนาการเด็ก 1–3 ปีของไทย
@@ -322,7 +322,7 @@ async function aiFromPhotos(){
   let canImg=false; try{ const lim=await sample.limits(); canImg=!!(lim&&lim.images); }catch(_){}
   if(!canImg){ msgEl().textContent="บัญชีนี้ยังส่งรูปให้ AI ไม่ได้ เปลี่ยนเป็นบันทึกเองได้"; return; }
   const phs=[...(e.photos.before||[]).map(p=>["ก่อนกิน",p]),...(e.photos.after||[]).map(p=>["หลังกิน",p])], blobs=[];
-  for(const [,p] of phs){ try{ const r=await fetch(p.url||("/_blob/"+p.id)); blobs.push(await r.blob()); }catch(_){} }
+  for(const [,p] of phs){ try{ const r=await fetch(A.photoUrl(p)); blobs.push(await r.blob()); }catch(_){} }
   if(!blobs.length){ msgEl().textContent="ยังไม่มีรูป เพิ่มรูปก่อนกินก่อน"; return; }
   const btn=$("#l-aiphoto"); if(btn){ btn.disabled=true; btn.innerHTML=`${icon("sparkle")}กำลังวิเคราะห์…`; }
   msgEl().textContent="AI กำลังดูรูป ใช้เวลาราว 10–30 วินาที";
@@ -344,7 +344,7 @@ groups = ปริมาณที่กินจริงทั้งมื้�
 async function addPhoto(input){
   const k=input.dataset.pk, f=input.files&&input.files[0]; if(!f||!S.assets) return;
   readMeal(); const um=$("#l-up"); if(um) um.textContent="กำลังอัปโหลดรูป…";
-  try{ const sm=await A.resizeImg(f,1280); const r=await S.assets.upload(sm.blob); R.e.photos[k].push({id:r.id,url:r.url}); A.logDirty=true; redraw(); }
+  try{ const sm=await A.resizeImg(f,1280); const r=await S.assets.upload(sm.blob); R.e.photos[k].push(S.assets.local ? {id:r.id} : {id:r.id,url:r.url}); A.logDirty=true; redraw(); }
   catch(_){ if(um) um.textContent="อัปโหลดรูปไม่สำเร็จ ลองใหม่"; }
 }
 const panel = $("#sheet");
@@ -398,6 +398,7 @@ panel.addEventListener("click", ev=>{
 });
 panel.addEventListener("change", ev=>{
   const t=ev.target;
+  if(t.tagName==="SELECT") t.blur(); // เลือกแล้วปิด dropdown/picker ทันที ไม่ให้ค้างบนมือถือ
   if(t.id==="l-date"){ if(!t.value) return; R.d=t.value; load(); draw(); return; }
   if(t.type==="file") return addPhoto(t);
   if(t.classList.contains("in-n") && t.closest(".sitem")){ t.closest(".sitem").querySelector(".in-g").value=A.guessCat(t.value); }

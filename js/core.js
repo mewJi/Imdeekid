@@ -162,9 +162,22 @@ function loadLocal(){
     else if(p==="app/settings") Object.assign(S.settings, v||{});
   } }catch(e){}
 }
+/* รูปภาพเมื่อไม่มี claude.use("assets"): เก็บ blob ใน IndexedDB ของเบราว์เซอร์นี้ (อยู่ในเครื่องเดียว ไม่แชร์) */
+const LA = App.localAssets = (() => {
+  const urls = {}; let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res,rej)=>{ if(!window.indexedDB) return rej(new Error("no idb")); const r=indexedDB.open("imdee",1); r.onupgradeneeded=()=>r.result.createObjectStore("blobs"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }));
+  const run = async (mode, fn) => { const d=await open(); return new Promise((res,rej)=>{ const t=d.transaction("blobs",mode); const q=fn(t.objectStore("blobs")); t.oncomplete=()=>res(q&&q.result); t.onerror=t.onabort=()=>rej(t.error); }); };
+  return {
+    local:true, urls,
+    async upload(blob){ const id="l"+Date.now().toString(36)+Math.random().toString(36).slice(2,8); await run("readwrite", s=>s.put(blob,id)); urls[id]=URL.createObjectURL(blob); return {id, url:urls[id]}; },
+    async load(){ try{ const d=await open(); await new Promise(res=>{ const q=d.transaction("blobs").objectStore("blobs").openCursor(); q.onsuccess=()=>{ const c=q.result; if(c){ urls[c.key]=URL.createObjectURL(c.value); c.continue(); } else res(); }; q.onerror=()=>res(); }); }catch(e){} },
+  };
+})();
+App.photoUrl = p => (p && p.id && LA.urls[p.id]) || (p && p.url) || ("/_blob/"+(p&&p.id));
 App.connect = async () => {
   let db=null, user=null, assets=null;
   try{ if(window.claude && claude.use){ [db,user,assets] = await Promise.all([claude.use("db"),claude.use("user"),claude.use("assets")]); } }catch(e){}
+  if(!assets){ await LA.load(); assets = LA; }
   S.assets = assets;
   if(!db){ S.mode="local"; loadLocal(); App.setSync("โหมดออฟไลน์ · บันทึกในเครื่องนี้"); App.emit("all"); return; }
   S.db=db; S.mode="db"; App.setSync("เชื่อมต่อแล้ว · แชร์กับทุกคนในบ้าน");
@@ -236,7 +249,7 @@ function entryToMeal(e, b){
   const man = e.groups && Object.values(e.groups).some(v=>v!=null&&v!=="");
   const useAi = e.trust==="ai" && e.ai && e.ai.eaten;
   const eaten = useAi ? {...e.ai.eaten} : man ? {carb:+e.groups.carb||0, protein:+e.groups.protein||0, veg:+e.groups.veg||0, fruit:+e.groups.fruit||0, fat:null} : null;
-  const ph = k => (e.photos&&e.photos[k]||[]).map(p=>p.url||("/_blob/"+p.id));
+  const ph = k => (e.photos&&e.photos[k]||[]).map(p=>App.photoUrl(p));
   const env = [];
   if(e.mood) env.push("ก่อนกิน "+e.mood);
   if(e.screen===true) env.push("มีจอ/ทีวีเปิด"); else if(e.screen===false) env.push("ไม่มีจอ");

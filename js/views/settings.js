@@ -39,7 +39,7 @@ A.views.settings = { render(){
   $$("[data-mdel]", el).forEach(b=>b.onclick=()=>{ draftMembers = mem.filter((_,i)=>i!==+b.dataset.mdel); this.render(); });
   $("#st-save-mem").onclick = async ()=>{ if(!mem.length){ A.toast("ต้องมีอย่างน้อย 1 คน"); return; } if(await saveSettings({members: mem})) draftMembers=null; };
   $("#st-photo").onchange = async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const sm=await A.resizeImg(f,480);
-    if(S.assets){ try{ A.setSync("กำลังอัปโหลดรูป…"); const r=await S.assets.upload(sm.blob); S.profile={photoId:r.id, photoUrl:r.url}; await A.save("app/profile", S.profile); }catch(_){ A.toast("อัปโหลดรูปไม่สำเร็จ"); return; } }
+    if(S.assets && !S.assets.local){ try{ A.setSync("กำลังอัปโหลดรูป…"); const r=await S.assets.upload(sm.blob); S.profile={photoId:r.id, photoUrl:r.url}; await A.save("app/profile", S.profile); }catch(_){ A.toast("อัปโหลดรูปไม่สำเร็จ"); return; } }
     else { S.profile={photoData:sm.url}; A.LS.set("app/profile", S.profile); }
     A.toast("เปลี่ยนรูปแล้ว"); A.emit("profile"); };
 }};
