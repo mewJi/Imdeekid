@@ -508,4 +508,24 @@ App.chartGrowth = (kind, ref, xr, yr, pts, xlab, ylab, xstep, ystep, name) => {
   pts.forEach((p,i)=>{ const last=i===pts.length-1; s+=`<circle class="hit" cx="${X(p.x)}" cy="${Y(p.y)}" r="${last?6:4}" fill="${last?"var(--accent)":"var(--surface)"}" stroke="var(--accent)" stroke-width="2" data-tip="${p.tip}"/>`; if(last) s+=`<text class="axis-strong" x="${X(p.x)-9}" y="${Y(p.y)-10}" text-anchor="end">${esc(name)} ${esc(p.label)}</text>`; });
   return s+"</svg>";
 };
+
+/* ช่องกรอกเวลา: พิมพ์เองได้ ขึ้นแป้งตัวเลข ใส่ ":" ให้อัตโนมัติ (เช่น พิมพ์ 0930 → 09:30) ค่าที่เก็บเป็น "HH:MM" เหมือนเดิม */
+App.TIME_ATTR = 'type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" placeholder="--:--" autocomplete="off" data-time';
+const timeTyping = v => {
+  let d = String(v).replace(/\D/g,"").slice(0,4);
+  if(d.length===1 && +d>2) d = "0"+d;                 // 9 → 09
+  if(d.length>=2 && +d.slice(0,2)>23) d = "23"+d.slice(2);
+  if(d.length===3 && +d[2]>5) d = d.slice(0,2)+"0"+d[2]; // 097 → 09:07
+  if(d.length>=4 && +d.slice(2)>59) d = d.slice(0,2)+"59";
+  return d.length>2 ? d.slice(0,2)+":"+d.slice(2) : d;
+};
+App.normTime = v => {
+  const s = String(v||"").trim(); if(!/\d/.test(s)) return "";
+  let h, m;
+  if(s.includes(":")){ const p = s.split(":"); h = p[0].replace(/\D/g,"") || "0"; m = (p[1]||"").replace(/\D/g,""); m = m.padEnd(2,"0").slice(0,2); }
+  else { const d = s.replace(/\D/g,""); h = d.slice(0,2) || "0"; m = d.length>2 ? d.slice(2,4).padEnd(2,"0") : "00"; }
+  return String(Math.min(23,+h)).padStart(2,"0")+":"+String(Math.min(59,+m)).padStart(2,"0");
+};
+document.addEventListener("input", e=>{ const t=e.target; if(!(t && t.dataset && "time" in t.dataset)) return; if(e.inputType && e.inputType.startsWith("delete")) { t.value = timeTyping(t.value); return; } t.value = timeTyping(t.value); try{ t.setSelectionRange(t.value.length, t.value.length); }catch(_){} }, true);
+document.addEventListener("change", e=>{ const t=e.target; if(t && t.dataset && "time" in t.dataset) t.value = App.normTime(t.value); }, true);
 })();

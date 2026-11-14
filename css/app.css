@@ -662,3 +662,35 @@ select,select.inp,.field select{-webkit-appearance:none;appearance:none;backgrou
 .wm-x .ic{width:15px;height:15px}
 .wm-chip:has(.opt[aria-pressed="true"]) .wm-x{color:var(--on-accent)}
 .wm-x:hover{color:var(--bad)}
+
+/* ช่องตัวเลข: ซ่อนปุ่มลูกศรขึ้น/ลง */
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* เวลาเริ่ม/จบ/นั่งนานสุด: คนละบรรทัด */
+.frow.frow-col{grid-template-columns:minmax(0,1fr)}
+.frow.frow-col .tin input{min-width:0}
+
+/* ธีมสว่าง: ช่องเล่าเพิ่ม (textarea) พื้นหลังสีขาว */
+:root[data-theme="light"] textarea.inp,:root[data-theme="light"] .field textarea{background:#fff}
+
+/* ช่องที่จำเป็น: ดอกจัน แท็ก "จำเป็น" และเครื่องหมาย ✓ */
+.req-star{color:var(--bad);margin-left:3px;font-weight:700}
+.fsec>summary .hint{display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:flex-end}
+.req-tag{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:.74rem;font-weight:500;font-family:var(--f-body);background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.req-tag.part{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.req-ok{display:inline-grid;place-items:center;margin-left:4px;color:var(--good)}
+.req-ok .ic{width:16px;height:16px}
+.req-x{margin-left:6px;color:var(--ink-3);font-size:.76rem;font-weight:400;font-family:var(--f-body)}
+.btn:disabled,.btn.primary:disabled{opacity:.45;cursor:not-allowed;filter:saturate(.6)}
+
+/* ไอคอน ⓘ ข้างหัวข้อ + กล่องคำอธิบาย */
+.info-btn{display:inline-grid;place-items:center;width:28px;height:28px;margin-left:4px;border:0;background:transparent;color:var(--ink-3);cursor:pointer;border-radius:50%;vertical-align:middle;padding:0}
+.info-btn .ic{width:18px;height:18px}
+.info-btn:hover,.info-btn[aria-expanded="true"]{color:var(--accent-ink);background:var(--accent-soft)}
+.info-note{padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--ink-2);font-size:.82rem;line-height:1.5}
+.info-note[hidden]{display:none}
+
+/* ช่องเวลาแบบพิมพ์เอง */
+input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.mrow input[data-time]{width:96px;flex:none}
