@@ -162,7 +162,7 @@ function draw(){
     const dur = e.start&&e.end ? ((toMin(e.end)-toMin(e.start))+1440)%1440 : null;
     const named = e.items.filter(i=>i.n), nItems = named.length, nDone = named.filter(itemDone).length;
     b += sec("served",++no,"อาหารที่เสิร์ฟ", nItems?`${nItems} รายการ`:"ขั้นที่ 1", `
-      <div class="qadd">${knownFoods().slice(0,14).map(n=>`<button type="button" data-addf="${esc(n)}">+ ${esc(n)}</button>`).join("")}</div>
+      <select class="inp" id="l-quickfood" aria-label="เลือกเมนูที่เคยบันทึก"><option value="">+ เลือกเมนูที่เคยบันทึก</option>${knownFoods().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("")}</select>
       <datalist id="food-list">${knownFoods().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
       <div style="display:grid;gap:8px" id="l-items">${e.items.map(servedRow).join("")}</div>
       <button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button>
@@ -399,6 +399,7 @@ panel.addEventListener("click", ev=>{
 panel.addEventListener("change", ev=>{
   const t=ev.target;
   if(t.tagName==="SELECT") t.blur(); // เลือกแล้วปิด dropdown/picker ทันที ไม่ให้ค้างบนมือถือ
+  if(t.id==="l-quickfood"){ const n=t.value; if(!n) return; readMeal(); if(!R.e.items.some(i=>i.n===n)) R.e.items.push(newItem(n)); A.logDirty=true; redraw(); return; }
   if(t.id==="l-date"){ if(!t.value) return; R.d=t.value; load(); draw(); return; }
   if(t.type==="file") return addPhoto(t);
   if(t.classList.contains("in-n") && t.closest(".sitem")){ t.closest(".sitem").querySelector(".in-g").value=A.guessCat(t.value); }
