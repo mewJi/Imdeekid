@@ -694,3 +694,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 /* ช่องเวลาแบบพิมพ์เอง */
 input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .mrow input[data-time]{width:96px;flex:none}
+
+/* ปุ่มเปิดตัวเลือกเมนู + modal รายการ (คีย์บอร์ดไม่บังรายการ) */
+.combo-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;color:var(--ink-3);cursor:pointer;font-size:16px;min-height:44px}
+.combo-btn .ic{width:18px;height:18px;flex:none}
+.fp-card{gap:12px}
+.fp-list{list-style:none;margin:0;padding:4px;max-height:min(46vh,360px);max-height:min(46dvh,360px);overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
