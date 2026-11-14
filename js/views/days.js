@@ -106,7 +106,7 @@ A.views.days = { render(arg){
   const base = A.base(); const sm = base.days && base.days[d] && base.days[d].summary;
   const es = MEALS.map(M=>{ const m=A.meal(d,M.k); if(!m.entry) return ""; const a=A.accept(m); return `${M.short}: ${a&&a.k?`กินได้ ${a.ok}/${a.k}`:"ยังไม่ระบุรายการ"}`; }).filter(Boolean).join(" · ");
   el.innerHTML = strip(d) + `
-    <div class="day-head"><h2>${thLong(d)}</h2>
+    <div class="day-head"><h2>${A.thDayShort(d)}</h2>
       <button class="icbtn" data-href="#days-${addDays(d,-1)}" aria-label="วันก่อนหน้า">${icon("chevL")}</button>
       <button class="icbtn" data-href="#days-${addDays(d,1)}" aria-label="วันถัดไป" ${d>=today()?"disabled":""}>${icon("chevR")}</button>
       <button class="btn primary" data-log="${d}|${A.guessMeal()}">${icon("plus")}บันทึก</button></div>

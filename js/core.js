@@ -20,6 +20,7 @@ const today = () => isoD(new Date());
 const addDays = (iso,n) => { const d=parseD(iso); d.setDate(d.getDate()+n); return isoD(d); };
 const thShort = s => { const d = parseD(s); return d.getDate()+" "+TH_M[d.getMonth()]; };
 const thLong = s => { const d = parseD(s); return "วัน"+TH_D[d.getDay()]+"ที่ "+d.getDate()+" "+TH_MF[d.getMonth()]+" "+(d.getFullYear()+543); };
+const thDayShort = s => { const d = parseD(s); return TH_DS[d.getDay()]+". "+d.getDate()+" "+TH_M[d.getMonth()]+" "+(d.getFullYear()+543); }; // อา. 8 พ.ย. 2569
 const thDate = s => { const d = parseD(s); return d.getDate()+" "+TH_M[d.getMonth()]+" "+(d.getFullYear()+543); };
 const nowHM = () => hhmm(new Date().getHours()*60+new Date().getMinutes());
 const guessMeal = () => { const h=new Date().getHours(); return h<11?"bk":h<16?"ln":"dn"; };
@@ -27,7 +28,7 @@ const median = a => { if(!a.length) return null; const s=[...a].sort((x,y)=>x-y)
 const pct = (a,b) => b? Math.round(a/b*100) : null;
 const round = (v,d=1) => Math.round(v*10**d)/10**d;
 const uid = () => Math.random().toString(36).slice(2,9);
-Object.assign(App, {$,$$,esc,TH_M,TH_MF,TH_D,TH_DS,toMin,hhmm,parseD,isoD,today,addDays,thShort,thLong,thDate,nowHM,guessMeal,median,pct,round,uid});
+Object.assign(App, {$,$$,esc,TH_M,TH_MF,TH_D,TH_DS,toMin,hhmm,parseD,isoD,today,addDays,thShort,thLong,thDayShort,thDate,nowHM,guessMeal,median,pct,round,uid});
 
 /* ---------------- icons ---------------- */
 const P = {
@@ -35,6 +36,11 @@ const P = {
   cal:'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  /* ไอคอนแบบทึบ (solid) สำหรับเมนูที่เลือกอยู่ในแถบล่าง */
+  home_s:'<path fill="currentColor" stroke="currentColor" stroke-width="1.6" d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
+  cal_s:'<path d="M8 3v3M16 3v3" stroke-width="2.2"/><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M5.5 5h13A2.5 2.5 0 0 1 21 7.5v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-10A2.5 2.5 0 0 1 5.5 5zM4.5 9.3h15v1.4h-15z"/>',
+  chart_s:'<g fill="currentColor" stroke="none"><rect x="3.5" y="10" width="4.5" height="10" rx="1.4"/><rect x="9.75" y="4" width="4.5" height="16" rx="1.4"/><rect x="16" y="13" width="4.5" height="7" rx="1.4"/></g>',
+  steth_s:'<path d="M6 3v5a4 4 0 0 0 8 0V3" stroke-width="2.8"/><path d="M10 12v3a5 5 0 0 0 10 0v-2" stroke-width="2.8"/><circle cx="20" cy="11" r="2.6" fill="currentColor" stroke="none"/>',
   snack:'<circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 10h.01M10 15h.01M14.5 15.5h.01M12 12.5h.01"/>',
   thermo:'<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/>',
   scale:'<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 9.5a5 5 0 0 1 7 0M12 13.5l2-2.8"/>',

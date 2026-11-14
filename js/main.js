@@ -34,7 +34,7 @@ A.current = () => parse();
 function navHtml(){
   const cur = parse();
   $("#nav").innerHTML = NAV.map(n=> n.h ? `<div class="nav-h">${n.h}</div>` : `<a href="#${n.v}" ${cur.raw===n.v?'aria-current="page"':""}>${icon(n.ic)}${n.label}</a>`).join("");
-  $("#bnav").innerHTML = BNAV.map(n=> n.fab ? `<a href="#" data-quick aria-haspopup="dialog" aria-label="เพิ่มบันทึก"><span class="fab">${icon("plus")}</span></a>` : `<a href="#${n.v}" ${(cur.v===(n.match||n.v))?'aria-current="page"':""}>${icon(n.ic)}${n.label}</a>`).join("");
+  $("#bnav").innerHTML = BNAV.map(n=> n.fab ? `<a href="#" data-quick aria-haspopup="dialog" aria-label="เพิ่มบันทึก"><span class="fab">${icon("plus")}</span></a>` : (on=>`<a href="#${n.v}" ${on?'aria-current="page"':""}>${icon(on?n.ic+"_s":n.ic)}${n.label}</a>`)(cur.v===(n.match||n.v))).join("");
 }
 function kidHtml(){
   const c=A.child(), ph=S.profile.photoUrl||S.profile.photoData;
