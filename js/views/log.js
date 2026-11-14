@@ -4,6 +4,7 @@ const A = window.App, {$,$$,esc,icon,S,MEALS,MEAL,CATS,UNITS,FEED,BEHAV,MOOD,SYM
 const GRP_U = {carb:"ทัพพี", protein:"ช้อนกินข้าว", veg:"ทัพพี", fruit:"ส่วน"};
 const GRP_N = {carb:"ข้าว-แป้ง", protein:"เนื้อสัตว์ ไข่ ถั่ว", veg:"ผัก", fruit:"ผลไม้"};
 const R = {tab:"meal", d:null, k:null, e:null, l:null, open:{}};
+const whoList = cur => { const m=[...A.members()]; if(cur && !m.includes(cur)) m.push(cur); return m; }; // รายชื่อผู้บันทึก + คนที่เคยบันทึกไว้ (กันค่าเดิมหาย)
 const lastWho = () => A.LS.get("who") || A.members()[0];
 
 function newEntry(d,k){ return {date:d, meal:k, by:lastWho(), start:"", end:"", items:[], feed:"", follow:false, behav:[], sitMax:"", mood:"", screen:null, toys:null, snackBefore:null, with:[], place:"บ้าน", photos:{before:[],after:[]}, groups:{carb:"",protein:"",veg:"",fruit:""}, ai:null, trust:"", note:""}; }
@@ -133,7 +134,7 @@ function photoSlot(k,lbl){
 function draw(){
   const P=$("#sheet-panel"), e=R.e, l=R.l, ex=!!S.entries[R.d+"_"+R.k];
   const hd = `<div class="sheet-h"><h2 id="sheet-title">บันทึกการกิน</h2><button class="icbtn" data-close aria-label="ปิด">${icon("x")}</button></div>`;
-  let b = `<div class="frow"><label class="field">วันที่<input type="date" id="l-date" value="${R.d}" max="${today()}"></label><div class="field">ผู้บันทึก${opts("who", A.members(), R.tab==="meal"?e.by:l.by).replace(/<\/div>$/, `<button type="button" class="opt opt-add" aria-expanded="${!!R.addWho}">+ เพิ่ม</button></div>`)}${R.addWho?`<div class="addwho"><input class="inp" id="l-newwho" placeholder="เช่น ปู่ ย่า พี่เลี้ยง" aria-label="ชื่อผู้บันทึกใหม่"><button type="button" class="btn sm primary" id="l-newwho-ok">เพิ่ม</button></div><span class="tiny">แก้หรือลบรายชื่อได้ที่ ตั้งค่า</span>`:""}</div></div>`;
+  let b = `<div class="frow"><label class="field">วันที่<input type="date" id="l-date" value="${R.d}" max="${today()}"></label><div class="field">ผู้บันทึก${opts("who", whoList(R.tab==="meal"?e.by:l.by), R.tab==="meal"?e.by:l.by).replace(/<\/div>$/, `<button type="button" class="opt opt-add" aria-expanded="${!!R.addWho}">+ เพิ่ม</button></div>`)}${R.addWho?`<div class="addwho"><input class="inp" id="l-newwho" placeholder="เช่น ปู่ ย่า พี่เลี้ยง" aria-label="ชื่อผู้บันทึกใหม่"><button type="button" class="btn sm primary" id="l-newwho-ok">เพิ่ม</button></div><span class="tiny">แก้หรือลบรายชื่อได้ที่ ตั้งค่า</span>`:""}</div></div>`;
   b += `<div style="margin-top:10px;min-width:0">${A.seg("ltab", [["meal","มื้ออาหาร"], ...DAYTABS.map(([v,lab])=>[v, lab+(tabHas(v,l)?' <i class="tdot"></i>':"")])], R.tab, "ltabs")}</div>`;
   let f;
   if(R.tab==="meal"){
