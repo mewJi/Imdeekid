@@ -538,3 +538,13 @@ td.off{opacity:.4;color:var(--ink-3)}
 .conv{font-size:.82rem;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px dashed var(--line-2)}
 .conv:empty{display:none}
 .conv .conv-v{font-weight:600;color:var(--ink)}
+
+/* มือถือ: รายการอาหารที่เสิร์ฟให้กระชับ — ชื่อ+หมวด+ถังขยะ 1 บรรทัด, จำนวน+หน่วย 1 บรรทัด */
+@media (max-width:600px){
+  .sitem{padding:8px;gap:6px}
+  .sitem .row1{grid-template-columns:minmax(0,1fr) 104px 36px;gap:5px}
+  .sitem .row1 select{grid-column:auto;grid-row:auto}
+  .sitem .row1 .inp{min-height:38px;padding:4px 8px}
+  .sitem .row1 .icbtn{width:36px;height:36px}
+  .sitem .row2{gap:5px}
+}
