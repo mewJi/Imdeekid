@@ -120,7 +120,7 @@ function growth(){
       <div class="growth-hero"><div class="ring ${gn.lev}">${gn.lev==="good"?"ตามเกณฑ์":gn.lev==="warn"?"เฝ้าดู":gn.lev==="bad"?"ปรึกษาหมอ":"–"}</div><div><div class="gh-v num">${gn.lw?`${gn.lw.weight} กก.`:"–"}</div><div class="sub num">${gn.lh?`ส่วนสูง ${esc(gn.lh.heightText||gn.lh.height)} ซม.`:""}</div></div></div><div class="zlist">
         <div class="zrow"><span class="sub">น้ำหนักตามอายุ</span>${A.zPill("wfa",gn.z1)}</div><div class="zrow"><span class="sub">ส่วนสูงตามอายุ</span>${A.zPill("lfa",gn.z2)}</div><div class="zrow"><span class="sub">น้ำหนักตามส่วนสูง</span>${A.zPill("wfl",gn.z3)}</div></div>
       ${c.sex!=="ชาย"?`<p class="note" style="margin-top:12px;border-color:var(--warn);background:var(--warn-soft)">เกณฑ์อ้างอิงในเวอร์ชันนี้เป็นของเด็กชาย ค่า z-score ของเด็กหญิงยังไม่ถูกต้อง</p>`:""}</div>
-    <div class="card">${A.cardHead("เพิ่มการวัด")}${S.canWrite?`<div style="display:grid;gap:10px"><label class="field">วันที่<input type="date" id="gf-d" value="${today()}" max="${today()}"></label><div class="frow"><label class="field">น้ำหนัก (กก.)<input type="number" step="0.1" min="3" max="30" id="gf-w"></label><label class="field">ส่วนสูง (ซม.)<input type="number" step="0.1" min="45" max="120" id="gf-h"></label></div><button class="btn primary" id="gf-save">${icon("plus")}บันทึกการวัด</button><span class="tiny" id="gf-msg"></span></div>`:`<p class="sub">บัญชีนี้ดูได้อย่างเดียว</p>`}</div></div>
+    <div class="card">${A.cardHead("เพิ่มการวัด")}${S.canWrite?`<div style="display:grid;gap:10px"><label class="field">วันที่<input type="date" id="gf-d" value="${today()}" max="${today()}"></label><div class="frow"><label class="field">น้ำหนัก (กก.)<input type="number" step="0.1" min="3" max="30" inputmode="decimal" enterkeyhint="next" id="gf-w"></label><label class="field">ส่วนสูง (ซม.)<input type="number" step="0.1" min="45" max="120" inputmode="decimal" enterkeyhint="done" id="gf-h"></label></div><button class="btn primary" id="gf-save">${icon("plus")}บันทึกการวัด</button><span class="tiny" id="gf-msg"></span></div>`:`<p class="sub">บัญชีนี้ดูได้อย่างเดียว</p>`}</div></div>
     ${leg}<div class="g3">
       ${card("น้ำหนักตามอายุ","อายุ 12–36 เดือน", A.chartGrowth("wfa",R.wfa,[12,36],[6,20],wp,"อายุ (เดือน)","กก.",6,2,c.name))}
       ${card("ความยาวตามอายุ","อายุ 12–24 เดือน (วัดแบบนอน)", A.chartGrowth("lfa",R.lfa,[12,24],[66,96],hp,"อายุ (เดือน)","ซม.",3,5,c.name))}
@@ -136,7 +136,7 @@ A.views.insights = { render(a){
   el.innerHTML = subtabs(tab) + (tab==="behavior"?behavior(dates):tab==="nutrition"?nutrition(dates):growth());
   $$('[data-seg="ins"] button', el).forEach(b=>b.onclick=()=>A.go(b.dataset.v));
   const sv=$("#gf-save"); if(sv) sv.onclick=async()=>{ const d=$("#gf-d").value, w=parseFloat($("#gf-w").value), hh=parseFloat($("#gf-h").value);
-    if(!d||(!w&&!hh)){ $("#gf-msg").textContent="ใส่วันที่ และน้ำหนักหรือส่วนสูงอย่างน้อยหนึ่งค่า"; return; }
+    if(!d||(!w&&!hh)){ $("#gf-msg").textContent="กรุณาระบุวันที่ และน้ำหนักหรือส่วนสูงอย่างน้อยหนึ่งค่า"; return; }
     const rec={...(S.growthExtra[d]||{})}; if(w) rec.weight=w; if(hh){ rec.height=hh; rec.heightText=String(hh); } rec.src="บันทึกในแอป";
     if(await A.save("growth/"+d, rec)){ S.growthExtra[d]=rec; A.toast("บันทึกการวัดแล้ว"); A.emit("growthExtra"); } else $("#gf-msg").textContent="บันทึกไม่สำเร็จ"; };
 }};

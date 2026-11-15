@@ -23,8 +23,14 @@ A.views.settings = { render(){
       <input class="inp" id="st-mem" placeholder="เพิ่มชื่อ เช่น น้า" style="width:160px"><button class="btn sm" id="st-madd">${icon("plus")}เพิ่ม</button></div>
     <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" id="st-save-mem">บันทึกรายชื่อ</button></div>
   </div>
-  <div class="card">${A.cardHead("หน่วยที่มักเสิร์ฟลูก","ตั้งหน่วยเริ่มต้นของแต่ละหมวดอาหาร เวลาเพิ่มอาหารระบบจะเลือกหน่วยนี้ให้ก่อน (เปลี่ยนในแต่ละรายการได้)")}
-    ${A.CATS.map(c=>`<div class="set-row"><div><h4>${esc(c)}</h4></div><label class="field"><select class="du-sel" data-cat="${esc(c)}" aria-label="หน่วยเริ่มต้นของ ${esc(c)}">${A.unitsFor(c).map(([v,l])=>`<option value="${esc(v)}"${v===A.defaultUnit(c)?" selected":""}>${esc(l)}</option>`).join("")}</select></label></div>`).join("")}
+  <div class="card">${A.cardHead("หน่วยของอาหารแต่ละหมวด","เลือกหน่วยเริ่มต้นที่ระบบใส่ให้ก่อนเวลาเพิ่มอาหาร และเพิ่มหรือเอาหน่วยออกได้ตามที่บ้านใช้ (เปลี่ยนในแต่ละรายการได้)")}
+    ${A.CATS.map(c=>{ const ed=(S.settings.unitEdits||{})[c]||{}, edited=(ed.added&&ed.added.length)||(ed.removed&&ed.removed.length); return `<div class="unit-box">
+      <div class="set-row"><div><h4>${esc(c)}</h4><p class="tiny">หน่วยเริ่มต้น</p></div><label class="field"><select class="du-sel" data-cat="${esc(c)}" aria-label="หน่วยเริ่มต้นของ ${esc(c)}">${A.unitsFor(c).map(([v,l])=>`<option value="${esc(v)}"${v===A.defaultUnit(c)?" selected":""}>${esc(l)}</option>`).join("")}</select></label></div>
+      <div class="tagin">${A.unitsFor(c).map(([v,l])=>`<span class="tag">${esc(l)}<button type="button" data-udel="${esc(v)}" data-cat="${esc(c)}" aria-label="เอาหน่วย ${esc(l)} ออกจาก ${esc(c)}">${icon("x")}</button></span>`).join("")}
+        <input class="inp u-in" data-cat="${esc(c)}" placeholder="เพิ่มหน่วย เช่น ถุง" maxlength="12" aria-label="เพิ่มหน่วยของ ${esc(c)}"><button type="button" class="btn sm u-add" data-cat="${esc(c)}">${icon("plus")}เพิ่ม</button></div>
+      ${edited?`<button type="button" class="ctog u-reset" data-cat="${esc(c)}">คืนหน่วยเดิมของหมวดนี้</button>`:""}
+    </div>`; }).join("")}
+    <p class="tiny" style="margin-top:8px">หน่วยที่เพิ่มเองบันทึกได้ตามปกติ แต่ระบบยังไม่แปลงเป็นพลังงานหรือหมู่อาหาร ส่วนรายการที่เคยบันทึกด้วยหน่วยที่เอาออกจะยังแสดงตามเดิม</p>
     <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" id="st-save-units">บันทึกหน่วยเริ่มต้น</button></div>
   </div>
   <div class="card">${A.cardHead("การแสดงผลและข้อมูล")}
@@ -35,14 +41,27 @@ A.views.settings = { render(){
   <div class="card flat"><p class="tiny">อิ่มดี เป็นเครื่องมือช่วยบันทึกสำหรับครอบครัว ข้อมูลและข้อสังเกตทั้งหมดใช้ประกอบการปรึกษาแพทย์ ไม่ใช่การวินิจฉัยหรือคำแนะนำทางการแพทย์ · เกณฑ์การเจริญเติบโต: มาตรฐาน WHO / กรมอนามัย · ปริมาณอาหาร: ธงโภชนาการเด็ก 1–3 ปี</p></div>`;
   let sex = c.sex;
   $$('[data-seg="sex"] button', el).forEach(b=>b.onclick=()=>{ sex=b.dataset.v; $$('[data-seg="sex"] button', el).forEach(x=>x.setAttribute("aria-pressed", x===b)); });
-  $("#st-save-child").onclick = ()=>{ const name=$("#st-name").value.trim(), birth=$("#st-birth").value; if(!name||!birth){ A.toast("ใส่ชื่อและวันเกิดก่อนบันทึก"); return; } saveSettings({child:{name, sex, birth}}); };
+  $("#st-save-child").onclick = ()=>{ const name=$("#st-name").value.trim(), birth=$("#st-birth").value; if(!name||!birth){ A.toast("กรุณาระบุชื่อเล่นและวันเกิด"); return; } saveSettings({child:{name, sex, birth}}); };
   $$('[data-seg="theme"] button', el).forEach(b=>b.onclick=()=>{ S.theme=b.dataset.v; document.documentElement.dataset.theme=S.theme; A.LS.set("theme",S.theme); A.render(); });
   $$('[data-seg="demo"] button', el).forEach(b=>b.onclick=()=>saveSettings({demo: b.dataset.v==="on"}));
   const addM = ()=>{ const v=$("#st-mem").value.trim(); if(!v) return; draftMembers=[...mem.filter(x=>x!==v), v]; this.render(); $("#st-mem").focus(); };
   $("#st-madd").onclick = addM; $("#st-mem").onkeydown = e=>{ if(e.key==="Enter"){ e.preventDefault(); addM(); } };
   $$("[data-mdel]", el).forEach(b=>b.onclick=()=>{ draftMembers = mem.filter((_,i)=>i!==+b.dataset.mdel); this.render(); });
-  $("#st-save-units").onclick = ()=>{ const du={}; $$(".du-sel", el).forEach(x=>{ du[x.dataset.cat]=x.value; }); saveSettings({defaultUnits: du}); };
-  $("#st-save-mem").onclick = async ()=>{ if(!mem.length){ A.toast("ต้องมีอย่างน้อย 1 คน"); return; } if(await saveSettings({members: mem})) draftMembers=null; };
+  const curDu = ()=>{ const du={...(S.settings.defaultUnits||{})}; $$(".du-sel", el).forEach(x=>{ du[x.dataset.cat]=x.value; }); return du; };
+  const unitEdits = ()=>JSON.parse(JSON.stringify(S.settings.unitEdits||{}));
+  const saveUnits = ue=>saveSettings({unitEdits: ue, defaultUnits: curDu()});
+  const addUnit = cat=>{ const inp=$$(".u-in", el).find(x=>x.dataset.cat===cat), v=((inp&&inp.value)||"").trim(); if(!v) return;
+    if(A.unitsFor(cat).some(([u,l])=>u===v||l===v)){ A.toast("มีหน่วยนี้อยู่แล้ว"); return; }
+    const ue=unitEdits(), e=ue[cat]||(ue[cat]={added:[],removed:[]}); e.added=e.added||[]; e.removed=e.removed||[];
+    if(e.removed.includes(v)) e.removed=e.removed.filter(x=>x!==v); else e.added.push(v); saveUnits(ue); };
+  $$(".u-add", el).forEach(b=>b.onclick=()=>addUnit(b.dataset.cat));
+  $$(".u-in", el).forEach(i=>i.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addUnit(i.dataset.cat); } });
+  $$("[data-udel]", el).forEach(b=>b.onclick=()=>{ const cat=b.dataset.cat, v=b.dataset.udel; if(A.unitsFor(cat).length<=1){ A.toast("กรุณาเหลือหน่วยไว้อย่างน้อย 1 หน่วย"); return; }
+    const ue=unitEdits(), e=ue[cat]||(ue[cat]={added:[],removed:[]}); e.added=e.added||[]; e.removed=e.removed||[];
+    if(A.baseUnitsFor(cat).some(([u])=>u===v)){ if(!e.removed.includes(v)) e.removed.push(v); } else e.added=e.added.filter(x=>x!==v); saveUnits(ue); });
+  $$(".u-reset", el).forEach(b=>b.onclick=()=>{ const ue=unitEdits(); delete ue[b.dataset.cat]; saveUnits(ue); });
+  $("#st-save-units").onclick = ()=>{ saveSettings({defaultUnits: curDu()}); };
+  $("#st-save-mem").onclick = async ()=>{ if(!mem.length){ A.toast("กรุณาระบุคนในบ้านอย่างน้อย 1 คน"); return; } if(await saveSettings({members: mem})) draftMembers=null; };
   $("#st-photo").onchange = async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const sm=await A.resizeImg(f,480);
     if(S.assets && !S.assets.local){ try{ A.setSync("กำลังอัปโหลดรูป…"); const r=await S.assets.upload(sm.blob); S.profile={photoId:r.id, photoUrl:r.url}; await A.save("app/profile", S.profile); }catch(_){ A.toast("อัปโหลดรูปไม่สำเร็จ"); return; } }
     else { S.profile={photoData:sm.url}; A.LS.set("app/profile", S.profile); }

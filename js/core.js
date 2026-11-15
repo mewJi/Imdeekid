@@ -224,7 +224,11 @@ App.UNITS_BY_CAT = {
   "ขนม-เบเกอรี่":[UU("ชิ้น"),UU("ลูก"),UU("แผ่น"),UU("ห่อ"),UU("กำมือ"),UU("เม็ด"),UU("ซอง"),UU("คำ"),UU("กรัม")],
   "ซุป-เมนูรวม":[UU("ถ้วย"),UU("ช้อน"),UU("ชิ้น"),UU("ส่วน"),UU("คำ"),UU("กรัม")],
 };
-App.unitsFor = cat => App.UNITS_BY_CAT[cat] || UNITS.map(u=>[u,u]);
+App.baseUnitsFor = cat => App.UNITS_BY_CAT[cat] || UNITS.map(u=>[u,u]);
+/* หน่วยของหมวด = หน่วยตั้งต้น − ที่ผู้ใช้ซ่อน + ที่ผู้ใช้เพิ่ม (ตั้งค่า → หน่วยของอาหารแต่ละหมวด; เก็บใน settings.unitEdits = {หมวด:{added:[],removed:[]}})
+   หน่วยที่เพิ่มเองไม่มีตัวคูณแปลงในตาราง CONV จึงบันทึกได้ แต่ยังไม่นำไปคำนวณพลังงาน/หมู่อาหาร */
+App.unitsFor = cat => { const base = App.baseUnitsFor(cat), e = (S.settings.unitEdits||{})[cat] || {}, rm = new Set(e.removed||[]);
+  const list = base.filter(([v])=>!rm.has(v)); (e.added||[]).forEach(n=>{ if(!list.some(([v])=>v===n)) list.push([n,n]); }); return list; };
 /* หน่วยเริ่มต้นของหมวด: ที่ผู้ใช้ตั้งไว้ (ตั้งค่า → หน่วยที่มักเสิร์ฟลูก) ไม่งั้นใช้หน่วยแรกของหมวด */
 App.defaultUnit = cat => { const list = App.unitsFor(cat), u = (S.settings.defaultUnits||{})[cat]; return u && list.some(([v])=>v===u) ? u : (list[0]||[""])[0]; };
 App.members = () => (S.settings.members && S.settings.members.length) ? S.settings.members : DEFAULT_MEMBERS;
@@ -245,7 +249,8 @@ const fmtAmt = (a,u) => a==null||a===""?"":`${a} ${u||""}`.trim();
 App.fmtAmt = fmtAmt;
 App.guessCat = n => {
   n=n||"";
-  if(/โยเกิร์ต|นม/.test(n)) return "นม-โยเกิร์ต";
+  if(/ขนมปัง|ขนมจีน/.test(n)) return "ข้าว-แป้ง"; /* ขนมปัง/ขนมจีน เป็นแป้งหลัก (ไม่ใช่ขนมหรือนม) */
+  if(/โยเกิร์ต|นม/.test(n.replace(/ขนม/g,""))) return "นม-โยเกิร์ต"; /* ตัด "ขนม" ออกก่อน เพราะมีตัวอักษร "นม" อยู่ข้างใน */
   if(/ซุป|ต้มจืด|ต้มข่า|แกง|พะโล้/.test(n)) return "ซุป-เมนูรวม";
   if(/น้ำปั่น|สมูทตี้|น้ำผลไม้/.test(n)) return "เครื่องดื่ม-น้ำปั่น";
   if(/วาฟเฟิล|แพนเค้ก|ขนม|ซาลาเปา|โดนัท|ตะโก้|เค้ก|คุกกี้/.test(n)) return "ขนม-เบเกอรี่";

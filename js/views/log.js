@@ -93,31 +93,85 @@ async function delWho(name){
 }
 function closeWhoModal(){ $$("#sheet .whomodal").forEach(m=>m.remove()); }
 /* modal เพิ่มอาหารที่เสิร์ฟ: ชื่อ หมวด จำนวน หน่วย + ส่วนประกอบ (กรอกใน modal แล้วกด "เพิ่มรายการ") */
-const imCompRow = () => `<div class="im-comp"><div class="im-comp-h"><input class="inp im-cn" placeholder="ส่วนประกอบ เช่น เส้น แซลมอน ซอส" aria-label="ส่วนประกอบ" list="food-list" autocomplete="off"><button type="button" class="icbtn im-cdel" aria-label="ลบส่วนประกอบ">${icon("x")}</button></div><div class="im-grid">${catSel("im-cg","","")}<input class="inp num im-csa" type="number" step="any" min="0" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="จำนวน" aria-label="จำนวนส่วนประกอบ">${unitSel("im-csu","","ช้อน")}</div></div>`;
 /* modal เพิ่มอาหาร: หน่วยเปลี่ยนตามหมวด (ถ้าผู้ใช้เลือกหน่วยเองแล้วและยังอยู่ในหมวดใหม่ ให้คงไว้) */
 function syncUnitSel(g, u){ if(!g||!u) return; const cur=u.value, keep=(u.dataset.touched && A.unitsFor(g.value).some(([v])=>v===cur)) ? cur : A.defaultUnit(g.value); u.innerHTML=unitOpts(g.value, keep); }
 const imSyncUnits = () => syncUnitSel($("#im-g"), $("#im-su"));
-const imSyncCompUnits = row => row && syncUnitSel(row.querySelector(".im-cg"), row.querySelector(".im-csu"));
-function openItemModal(pre){
+function openItemModal(pre, eix){
+  const edit = eix!=null && !!R.e.items[eix]; /* eix = ลำดับรายการที่กำลังแก้ (ไม่ใส่ = เพิ่มใหม่) */
   closeWhoModal();
-  const m=document.createElement("div"); m.id="item-modal"; m.className="whomodal top"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
-  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide"><h3 id="wm-title">เพิ่มอาหารที่เสิร์ฟ</h3>
-    <label class="field">ชื่ออาหารหรือเมนู${STAR}<input class="inp" id="im-n" list="food-list" placeholder="เช่น ข้าวสวย ไข่ต้ม สปาเก็ตตี้" autocomplete="off" enterkeyhint="done"></label>
-    <label class="field">หมวด${STAR}${catSel("", "", "").replace('class="inp "','class="inp" id="im-g"')}</label>
+  const m=document.createElement("div"); m.id="item-modal"; m.className="whomodal top"; if(edit) m.dataset.ix=String(eix); m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide"><h3 id="wm-title">${edit?"แก้ไขอาหารที่เสิร์ฟ":"เพิ่มอาหารที่เสิร์ฟ"}</h3>
+    <label class="field"><span>ชื่ออาหารหรือเมนู${STAR}</span><input class="inp" id="im-n" list="food-list" placeholder="เช่น ข้าวสวย ไข่ต้ม สปาเก็ตตี้" autocomplete="off" enterkeyhint="done"><p class="tiny field-err" id="im-err" role="alert" hidden>กรุณาระบุชื่ออาหารหรือเมนู</p></label>
+    <label class="field"><span>หมวด${STAR}</span>${catSel("", "", "").replace('class="inp "','class="inp" id="im-g"')}</label>
     <div class="field">ปริมาณที่เสิร์ฟ<div class="im-grid2"><input class="inp num" id="im-sa" type="number" step="any" min="0" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="จำนวน" aria-label="จำนวนที่เสิร์ฟ">${unitSel("", "", "").replace('class="inp "','class="inp" id="im-su"')}</div></div>
-    <div class="im-comps" id="im-comps"></div>
-    <button type="button" class="ctog" id="im-addc">+ แตกส่วนประกอบของเมนูนี้</button>
-    <p class="tiny" id="im-err" style="margin:0;color:var(--bad)" hidden>ใส่ชื่ออาหารก่อน</p>
-    <div class="wm-act"><button type="button" class="btn" data-wm-close>ยกเลิก</button><button type="button" class="btn primary" id="im-ok">เพิ่มรายการ</button></div></div>`;
+    <div class="wm-act"><button type="button" class="btn" data-wm-close>ยกเลิก</button><button type="button" class="btn primary" id="im-ok">${edit?"บันทึก":"เพิ่มรายการ"}</button></div></div>`;
   $("#sheet").appendChild(m); const x=$("#im-n");
+  if(edit){ const it=R.e.items[eix]; x.value=it.n||""; const g=$("#im-g"); g.value=gOf(it); g.dataset.touched="1"; imSyncUnits();
+    const su=$("#im-su"); if(it.su){ if(![...su.options].some(o=>o.value===it.su)) su.add(new Option(it.su,it.su)); su.value=it.su; su.dataset.touched="1"; } /* หน่วยที่เคยบันทึกแต่ถูกเอาออกจากรายการ ยังแสดงตามเดิม */
+    $("#im-sa").value=it.sa==null?"":String(it.sa); return; }
   if(pre && x){ x.value=pre; const g=$("#im-g"); if(g) g.value=A.guessCat(pre); imSyncUnits(); const sa=$("#im-sa"); if(sa) sa.focus(); } /* เลือกจากช่องค้นหา: ใส่ชื่อให้แล้ว ไปที่ช่องจำนวนต่อเลย */
   else { imSyncUnits(); if(x) x.focus(); }
 }
+/* popup เพิ่มส่วนประกอบของเมนู ทีละส่วน (ชื่อ หมวด ปริมาณ หน่วย) */
+const cmSyncUnits = () => syncUnitSel($("#cm-g"), $("#cm-su"));
+let compCtx=null; /* เก็บฟอร์มส่วนประกอบไว้ชั่วคราวตอนไปเลือกชื่อในตัวค้นหา */
+let compAdded=[]; /* ชื่อส่วนประกอบที่เพิ่มไปแล้วในรอบนี้ (เพิ่มได้หลายรายการต่อเนื่อง) */
+/* รายการที่เพิ่มไปแล้วในรอบนี้: แสดงเป็นการ์ดด้านล่างฟอร์ม ลบได้อย่างเดียว (ถ้าจะแก้ ให้ลบแล้วเพิ่มใหม่) */
+const refreshAdded = () => { const p=$("#cm-added"); if(!p) return; p.hidden=!compAdded.length;
+  p.innerHTML = compAdded.length ? `<div class="cm-list-h"><b>รายการส่วนประกอบที่เพิ่ม</b><span>${compAdded.length} รายการ</span></div>`+compAdded.map((c,i)=>`<div class="cm-card" data-i="${i}"><div class="cp-main"><b class="cp-n">${esc(c.n)}</b><span class="tiny">${esc([gOf(c), fmtAmt(c.sa,c.su)].filter(Boolean).join(" · "))}</span></div><button type="button" class="icbtn cm-del" aria-label="ลบ ${esc(c.n)}">${icon("trash")}</button></div>`).join("") : "";
+  const cl=document.querySelector("#comp-modal .wm-act [data-wm-close]"); if(cl) cl.textContent = compAdded.length ? "ปิด" : "ยกเลิก"; };
+function delAddedComp(i){ const c=compAdded[i], m=$("#comp-modal"); if(!c||!m) return; readItems(); const it=R.e.items[+m.dataset.ix];
+  if(it&&it.comps){ const x=it.comps.indexOf(c); if(x>=0) it.comps.splice(x,1); } compAdded.splice(i,1); A.logDirty=true; redraw(); refreshAdded(); }
+function openCompModal(k, d, cx){
+  const it=R.e.items[k]; if(!it) return;
+  const edit = cx!=null; /* cx = ลำดับส่วนประกอบที่กำลังแก้ (ไม่ใส่ = เพิ่มใหม่) */
+  if(!edit && !d) compAdded=[];
+  closeWhoModal();
+  const m=document.createElement("div"); m.id="comp-modal"; m.className="whomodal top"; m.dataset.ix=String(k); if(edit) m.dataset.cx=String(cx); m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide cm-wrap"><div class="cm-head"><h3 id="wm-title">${edit?"แก้ไขส่วนประกอบ":"เพิ่มส่วนประกอบ"}</h3><div class="parent-note">${icon("bowl")}<span><b>${esc(it.n||"ยังไม่ใส่ชื่อ")}</b></span></div></div>
+    <div class="cm-body">
+    <div class="field"><span>ชื่อส่วนประกอบ${STAR}</span><input type="hidden" id="cm-n"><button type="button" class="inp pickfield pf-empty" id="cm-pick" aria-haspopup="dialog"><span class="combo-ic">${icon("search")}</span><span class="pf-t" id="cm-pick-t">เลือกหรือค้นหาส่วนประกอบ</span></button><p class="tiny field-err" id="cm-err" role="alert" hidden>กรุณาระบุชื่อส่วนประกอบ</p></div>
+    <div class="cm-row"><label class="field"><span>หมวด${STAR}</span>${catSel("", "", "").replace('class="inp "','class="inp" id="cm-g"')}</label>
+      <div class="field"><span>ปริมาณที่เสิร์ฟ${STAR}</span><div class="cm-qty"><input class="inp num" id="cm-sa" type="number" step="any" min="0" inputmode="decimal" enterkeyhint="done" placeholder="จำนวน" autocomplete="off" aria-label="จำนวนส่วนประกอบ">${unitSel("", "", "", "").replace('class="inp "','class="inp" id="cm-su"')}</div></div></div>
+    <p class="tiny field-err" id="cm-qerr" role="alert" hidden>กรุณาระบุปริมาณที่เสิร์ฟ</p>
+    ${edit?"":`<button type="button" class="btn" id="cm-more">${icon("plus")}เพิ่มแล้วกรอกรายการต่อไป</button>`}
+    <div class="cm-list" id="cm-added" hidden></div>
+    </div>
+    <div class="wm-act"><button type="button" class="btn" data-wm-close>ยกเลิก</button><button type="button" class="btn primary" id="cm-ok">${edit?"บันทึก":"เพิ่มส่วนประกอบ"}</button></div></div>`;
+  $("#sheet").appendChild(m); cmSyncUnits(); refreshAdded();
+  if(d){ if(d.n){ $("#cm-n").value=d.n; const pk=$("#cm-pick"); pk.classList.remove("pf-empty"); $("#cm-pick-t").textContent=d.n; }
+    const g=$("#cm-g"); if(d.gt){ g.value=d.g; g.dataset.touched="1"; } else if(d.n){ g.value=A.guessCat(d.n); } cmSyncUnits();
+    if(d.sa) $("#cm-sa").value=d.sa; const su=$("#cm-su");
+    if(d.su && (d.gt || g.value===d.g)){ if(![...su.options].some(o=>o.value===d.su)) su.add(new Option(d.su,d.su)); su.value=d.su; su.dataset.touched="1"; } /* หน่วยที่เคยบันทึกไว้แต่ถูกเอาออกจากรายการ ยังแสดงตามเดิม */
+    if(d.n && !edit){ const sa=$("#cm-sa"); if(sa && !d.sa) sa.focus(); } }
+}
+function pickComp(){ const m=$("#comp-modal"); if(!m) return; compCtx={k:+m.dataset.ix, cx:m.dataset.cx!=null?+m.dataset.cx:null, d:{n:$("#cm-n").value, g:$("#cm-g").value, gt:!!$("#cm-g").dataset.touched, sa:$("#cm-sa").value, su:$("#cm-su").value}}; openFoodPicker({comp:true}); }
+function submitComp(more){
+  const m=$("#comp-modal"); if(!m) return; const k=+m.dataset.ix, n=($("#cm-n")||{}).value.trim();
+  if(!n && !more && compAdded.length && m.dataset.cx==null){ closeWhoModal(); redraw(); return; } /* เพิ่มต่อเนื่องไปแล้ว และไม่ได้กรอกรายการใหม่ → ปิดได้เลย */
+  /* ชื่อ และ ปริมาณ(จำนวน+หน่วย) ต้องกรอก: ข้อความเตือนแสดงใต้ช่องนั้นๆ */
+  const saV=$("#cm-sa").value.trim(), suV=$("#cm-su").value, badQ = !(parseFloat(saV)>0) || !suV;
+  const eN=$("#cm-err"), eQ=$("#cm-qerr"), pk0=$("#cm-pick"), sa0=$("#cm-sa"), su0=$("#cm-su");
+  if(eN) eN.hidden=!!n; if(n) pk0.removeAttribute("aria-invalid"); else pk0.setAttribute("aria-invalid","true");
+  if(eQ) eQ.hidden=!badQ; if(!(parseFloat(saV)>0)) sa0.setAttribute("aria-invalid","true"); else sa0.removeAttribute("aria-invalid");
+  if(!suV) su0.setAttribute("aria-invalid","true"); else su0.removeAttribute("aria-invalid");
+  if(!n){ pk0.focus(); return; } if(badQ){ (!(parseFloat(saV)>0)?sa0:su0).focus(); return; }
+  readItems(); const it=R.e.items[k]; if(!it){ closeWhoModal(); return; }
+  const c={n, g:$("#cm-g").value, sa:$("#cm-sa").value.trim(), su:$("#cm-su").value}; it.showComps=true; if(!it.comps) it.comps=[];
+  if(m.dataset.cx!=null && it.comps[+m.dataset.cx]) Object.assign(it.comps[+m.dataset.cx], c); else it.comps.push(c);
+  A.logDirty=true;
+  if(more && m.dataset.cx==null){ /* เพิ่มแล้วกรอกรายการต่อไป: เก็บรายการนี้ไว้ ล้างฟอร์มให้กรอกชื่อใหม่ (การ์ดด้านหลังอัปเดตทันที) */
+    compAdded.push(c); redraw();
+    $("#cm-n").value=""; const pk=$("#cm-pick"); pk.classList.add("pf-empty"); pk.removeAttribute("aria-invalid"); $("#cm-pick-t").textContent="เลือกหรือค้นหาส่วนประกอบ";
+    const e=$("#cm-err"); if(e) e.hidden=true; const eq=$("#cm-qerr"); if(eq) eq.hidden=true; $("#cm-sa").removeAttribute("aria-invalid"); $("#cm-su").removeAttribute("aria-invalid"); const g=$("#cm-g"); g.selectedIndex=0; delete g.dataset.touched; const su=$("#cm-su"); delete su.dataset.touched; cmSyncUnits(); $("#cm-sa").value=""; refreshAdded();
+    const body=m.querySelector(".cm-body"); if(body) body.scrollTop=0; return; }
+  closeWhoModal(); redraw();
+}
 function submitItem(){
   const n=($("#im-n")||{}).value.trim(), err=$("#im-err");
-  if(!n){ if(err) err.hidden=false; const x=$("#im-n"); if(x) x.focus(); return; }
+  if(!n){ if(err) err.hidden=false; const x=$("#im-n"); if(x){ x.setAttribute("aria-invalid","true"); x.focus(); } return; }
+  const em=$("#item-modal"); if(em && em.dataset.ix!=null){ readMeal(); const old=R.e.items[+em.dataset.ix]; if(old){ Object.assign(old,{n, g:$("#im-g").value, sa:$("#im-sa").value.trim(), su:$("#im-su").value}); A.logDirty=true; closeWhoModal(); redraw(); return; } }
   const it=newItem(n); it.g=$("#im-g").value; it.sa=$("#im-sa").value.trim(); it.su=$("#im-su").value;
-  it.comps=$$("#im-comps .im-comp").map(r=>({n:r.querySelector(".im-cn").value.trim(), g:r.querySelector(".im-cg").value, sa:r.querySelector(".im-csa").value.trim(), su:r.querySelector(".im-csu").value})).filter(c=>c.n);
   readMeal(); R.e.items.push(it); A.logDirty=true; closeWhoModal(); redraw();
   const rows=$$("#l-items .sitem"); if(rows.length) rows[rows.length-1].scrollIntoView({block:"nearest"});
 }
@@ -133,7 +187,7 @@ async function addWho(){
   S.settings.members = mem; await A.save("app/settings", JSON.parse(JSON.stringify(S.settings)));
   (R.tab==="meal"?R.e:R.l).by = name; A.LS.set("who", name); closeWhoModal(); A.emit("settings"); redraw();
 }
-function sec(id, n, title, hint, body, ok){ const open = R.open[id]!==undefined ? R.open[id] : true; return `<details class="fsec" data-sec="${id}"${open?" open":""}><summary><span class="n">${n}</span>${title}<span class="hint${ok?" ok":""}">${hint||""}</span></summary><div class="fsec-b">${body}</div></details>`; }
+function sec(id, n, title, hint, body, ok){ const open = R.open[id]!==undefined ? R.open[id] : true; return `<details class="fsec" data-sec="${id}"${open?" open":""}><summary><span class="n">${n}</span><span class="stt">${title}</span><span class="hint${ok?" ok":""}">${hint||""}</span></summary><div class="fsec-b">${body}</div></details>`; }
 const num = v => { const x=parseFloat(String(v??"").replace(",",".")); return isFinite(x)?x:null; };
 const rnd = v => Math.round(v*100)/100;
 const FRACS = [[1,"หมด"],[.75,"¾"],[.5,"½"],[.25,"¼"]];
@@ -147,14 +201,11 @@ const catSel = (cls, val, n) => `<select class="inp ${cls}" aria-label="หม�
 const newItem = (n="") => ({n, g:n?A.guessCat(n):"", sa:"", su:n?A.defaultUnit(A.guessCat(n)):"", st:"", ea:"", eu:"", frac:null, comps:[]});
 function servedRow(i, ix){
   const comps = i.comps||[], open = i.showComps || comps.length;
-  return `<div class="sitem" data-ix="${ix}">
-    <div class="row1"><span class="fico" aria-hidden="true">${icon("bowl")}</span><input class="inp in-n" value="${esc(i.n)}" placeholder="ชื่ออาหารหรือเมนู" aria-label="ชื่ออาหาร" list="food-list"><button type="button" class="icbtn in-del" aria-label="ลบรายการ">${icon("trash")}</button></div>
-    <div class="row-cat">${catSel("in-g", i.g, i.n)}</div>
-    <div class="row2"><span>เสิร์ฟ</span><input class="inp num in-sa" ${numAttr(i.sa)} inputmode="decimal" value="${esc(i.sa??"")}" placeholder="จำนวน" aria-label="จำนวนที่เสิร์ฟ">${unitSel("in-su", i.su, "", gOf(i))}</div>
-    ${open?`<div class="comps"><span class="tiny">ส่วนประกอบในจานที่เสิร์ฟ เช่น เส้น แซลมอน ครีมซอส ผัก</span>${comps.map((c,cx)=>`<div class="comp" data-cx="${cx}"><input class="inp c-n" value="${esc(c.n)}" placeholder="ส่วนประกอบ" aria-label="ส่วนประกอบ" list="food-list">${catSel("c-g", c.g, c.n)}<input class="inp num c-sa" ${numAttr(c.sa)} inputmode="decimal" value="${esc(c.sa??"")}" placeholder="จำนวน" aria-label="จำนวนส่วนประกอบ">${unitSel("c-su", c.su, A.defaultUnit(gOf(c)), gOf(c))}<button type="button" class="icbtn c-del" aria-label="ลบส่วนประกอบ">${icon("x")}</button></div>`).join("")}
+  return `<div class="sitem ro" data-ix="${ix}">
+    <div class="row1"><span class="fico" aria-hidden="true">${icon("bowl")}</span><div class="cp-main"><b class="cp-n">${esc(i.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny">${esc([gOf(i), fmtAmt(i.sa,i.su)].filter(Boolean).join(" · ")||"ยังไม่ระบุปริมาณ")}</span></div><button type="button" class="icbtn in-edit" aria-label="แก้ไขอาหาร ${esc(i.n||"")}">${icon("edit")}</button><button type="button" class="icbtn in-del" aria-label="ลบรายการ ${esc(i.n||"")}">${icon("trash")}</button></div>
+    ${open?`<div class="comps"><span class="tiny">ส่วนประกอบในจานที่เสิร์ฟ</span>${comps.map((c,cx)=>`<div class="comp ro" data-cx="${cx}"><div class="cp-main"><b class="cp-n">${esc(c.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny">${esc([gOf(c), fmtAmt(c.sa,c.su)].filter(Boolean).join(" · "))}</span></div><button type="button" class="icbtn c-edit" aria-label="แก้ไขส่วนประกอบ ${esc(c.n||"")}">${icon("edit")}</button><button type="button" class="icbtn c-del" aria-label="ลบส่วนประกอบ ${esc(c.n||"")}">${icon("trash")}</button></div>`).join("")}
       <button type="button" class="btn sm c-add" style="justify-self:start">${icon("plus")}เพิ่มส่วนประกอบ</button></div>`
       :`<button type="button" class="ctog c-open">+ แตกส่วนประกอบของเมนูนี้</button>`}
-    ${i.note?`<p class="tiny">ข้อมูลเดิม: ${esc(i.note)}</p>`:""}
   </div>`;
 }
 function eatenRow(i, ix){
@@ -232,7 +283,7 @@ function validateLog(){
   if(R.tab==="meal"){
     const items=e.items.filter(i=>i.n);
     if(!items.length) missing.push("อาหารที่เสิร์ฟ");
-    else if(items.some(i=>!i.st)) missing.push("ติ๊กว่ากินหรือไม่กิน");
+    else if(items.some(i=>!i.st)) missing.push("การกินหรือไม่กิน");
     else if(items.some(i=>!itemDone(i))) missing.push("ปริมาณที่กิน");
     const okT = v => /^\d{2}:\d{2}$/.test(v||"");
     if(!okT(e.start)) missing.push("เวลาเริ่ม");
@@ -258,8 +309,8 @@ function refreshSave(){
   const btn=$("#l-save")||$("#l-dsave"); if(!btn || !R.e || !$("#sheet").classList.contains("on")) return;
   read(); const v=validateLog();
   btn.disabled = !v.ok || !S.canWrite;
-  btn.title = v.ok ? "" : "ยังต้องกรอก: "+v.missing.join(" · ");
-  const m=$("#lmsg"); if(m && S.canWrite){ const cur=m.textContent||""; if(!cur || cur.startsWith("ยังต้องกรอก")) m.textContent = v.ok ? "" : "ยังต้องกรอก: "+v.missing.join(" · "); }
+  btn.title = v.ok ? "" : "กรุณาระบุ: "+v.missing.join(" · ");
+  const m=$("#lmsg"); if(m && (m.textContent||"").startsWith("กรุณาระบุ: ")) m.textContent=""; /* ไม่แสดงรายการที่ยังขาดที่แถบล่างแล้ว (ดูแท็ก "จำเป็น" ที่หัวข้อแทน) */
   ["served","eaten","time","milk","snack","nap","sym","body"].forEach(id=>{ const h=$(`details[data-sec="${id}"] .hint`); if(h) h.innerHTML=hintFor(id); });
 }
 function draw(){
@@ -297,19 +348,19 @@ function draw(){
       <div class="info-note" id="info-served" hidden>ใส่ปริมาณเป็นหน่วยที่ใช้จริงที่บ้าน เช่น 1 ทัพพี 1 ฟอง 5 ชิ้น ไม่ต้องชั่ง · เมนูรวม เช่น สปาเก็ตตี้ครีมซอสแซลมอน กด "แตกส่วนประกอบ" เพื่อแยกเส้น แซลมอน ซอส ผัก</div>
 
       <datalist id="food-list">${knownFoods().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
-      <div style="display:grid;gap:8px" id="l-items">${e.items.map(servedRow).join("")}</div>
-      <button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button>`, nItems>0);
+      <div style="display:grid;gap:8px" id="l-items">${e.items.length ? e.items.map(servedRow).join("") : `<div class="empty">${icon("bowl")}<b>ยังไม่มีอาหารที่เสิร์ฟ</b><span class="tiny">เพิ่มเมนูที่เสิร์ฟลูกในมื้อนี้</span><button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button></div>`}</div>
+      ${e.items.length ? `<button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button>` : ""}`, nItems>0);
     b += sec("eaten",++no,"อาหารที่กินจริง", hintFor("eaten"), nItems ? `
       <div style="display:grid;gap:8px" id="l-eaten">${e.items.map((i,ix)=>i.n?eatenRow(i,ix):"").join("")}</div>
       <div><h4 style="margin:6px 0 8px">สรุปมื้อนี้ตาม 5 หมู่</h4><div id="l-sum">${sumHTML()}</div></div>` : `
       <div class="empty" id="l-eaten">${icon("bowl")}<b>กรุณาระบุเมนูอาหารที่เสิร์ฟก่อน</b></div>`, nItems&&nDone===nItems);
     b += sec("time",++no,"เวลา", hintFor("time"), `<div class="frow frow-col">
       <label class="field">เริ่ม<span class="tin"><input ${A.TIME_ATTR} id="l-start" value="${esc(e.start)}"><button type="button" class="btn sm" data-now="l-start">ตอนนี้</button></span></label>
-      <label class="field">จบ<span class="tin"><input ${A.TIME_ATTR} id="l-end" value="${esc(e.end)}"><button type="button" class="btn sm" data-now="l-end">ตอนนี้</button></span></label>
-      <label class="field">นั่งต่อเนื่องนานสุด (นาที)<input id="l-sit" ${numAttr(e.sitMax)} inputmode="numeric" class="num" value="${esc(e.sitMax)}" placeholder="ประมาณ"></label></div>`, dur!=null);
+      <label class="field">จบ<span class="tin"><input ${A.TIME_ATTR} id="l-end" value="${esc(e.end)}"><button type="button" class="btn sm" data-now="l-end">ตอนนี้</button></span></label></div>`, dur!=null);
     b += sec("feed",++no,"การป้อนและพฤติกรรม", (FEED.find(x=>x[0]===e.feed)||[])[1]||"", `
       <div class="field">ใครเป็นคนตักเข้าปาก${opts("feed", FEED, e.feed)}</div>
       <label class="check"><input type="checkbox" id="l-follow" ${e.follow?"checked":""}> ต้องเดินตามป้อน</label>
+      <label class="field">นั่งต่อเนื่องนานสุด (นาที)<input id="l-sit" ${numAttr(e.sitMax)} inputmode="numeric" class="num" value="${esc(e.sitMax)}" placeholder="ประมาณ"></label>
       <div class="field">พฤติกรรมที่เกิดขึ้น (เลือกได้หลายข้อ)${opts("behav", BEHAV, e.behav, true)}</div>`, !!e.feed);
     b += sec("env",++no,"บรรยากาศก่อนและระหว่างมื้อ", "ไม่บังคับ", `
       <div class="field">ก่อนกิน${opts("mood", MOOD, e.mood)}</div>
@@ -352,8 +403,7 @@ function readItemsFixUnits(){
     (i.comps||[]).forEach((c,x)=>{ if(b[1][x]!==undefined && gOf(c)!==b[1][x]) c.su = fixUnit(c.su, gOf(c)); }); });
 }
 function readItems(){
-  $$("#l-items .sitem").forEach(r=>{ const i=R.e.items[+r.dataset.ix]; if(!i) return; i.n=r.querySelector(".in-n").value.trim(); i.g=r.querySelector(".in-g").value; i.sa=r.querySelector(".in-sa").value.trim(); i.su=r.querySelector(".in-su").value;
-    $$(".comp", r).forEach(cr=>{ const c=(i.comps||[])[+cr.dataset.cx]; if(!c) return; c.n=cr.querySelector(".c-n").value.trim(); c.g=cr.querySelector(".c-g").value; c.sa=cr.querySelector(".c-sa").value.trim(); c.su=cr.querySelector(".c-su").value; }); });
+  /* อาหารที่เสิร์ฟและส่วนประกอบแก้ในป๊อปอัป ไม่อ่านจาก DOM */
   $$("#l-eaten .eitem").forEach(r=>{ const i=R.e.items[+r.dataset.ix]; if(!i) return;
     const ea=r.querySelector(".in-ea"); if(ea){ const v=ea.value.trim(); if(v){ i.ea=v; i.eu=r.querySelector(".in-eu").value; i.frac=null; } else if(i.frac==null) i.ea=""; }
     $$(".ecomp", r).forEach(cr=>{ const c=i.comps[+cr.dataset.cx]; const x=cr.querySelector(".ec-ea"); if(c&&x){ c.ea=x.value.trim(); c.eu=cr.querySelector(".ec-eu").value; } });
@@ -382,9 +432,9 @@ const msg = t => { const m=$("#lmsg"); if(m){ m.textContent=t; m.dataset.warn=""
 const normTimes = () => $$("#sheet-panel [data-time]").forEach(i=>{ i.value = A.normTime(i.value); });
 async function saveMeal(){
   normTimes(); readMeal(); const e=R.e; e.items=e.items.filter(i=>i.n);
-  if(!e.items.length && !e.note){ msg("ใส่อาหารอย่างน้อย 1 รายการ หรือเล่าเพิ่มก่อนบันทึก"); return; }
-  const nost = e.items.find(i=>!i.st); if(nost){ msg(`ติ๊กว่า "${nost.n}" กินหรือไม่กิน (ไม่แน่ใจ เลือก "ไม่ทราบ")`); R.open.eaten=true; redraw(); return; }
-  const noamt = e.items.find(i=>!itemDone(i)); if(noamt){ msg(`ใส่ปริมาณที่กินของ "${noamt.n}" หรือกด "ไม่ทราบปริมาณ"`); R.open.eaten=true; redraw(); return; }
+  if(!e.items.length && !e.note){ msg("กรุณาระบุอาหารอย่างน้อย 1 รายการ หรือเล่าเพิ่มเติม"); return; }
+  const nost = e.items.find(i=>!i.st); if(nost){ msg(`กรุณาระบุว่า "${nost.n}" กินหรือไม่กิน (ไม่แน่ใจ เลือก "ไม่ทราบ")`); R.open.eaten=true; redraw(); return; }
+  const noamt = e.items.find(i=>!itemDone(i)); if(noamt){ msg(`กรุณาระบุปริมาณที่กินของ "${noamt.n}" หรือกด "ไม่ทราบปริมาณ"`); R.open.eaten=true; redraw(); return; }
   // amounts now come from the served/eaten items; old per-group estimates stay only when items carry no amounts
   const hasAmt = e.items.some(i=>(i.st==="ate"||i.st==="part") && (i.frac!=null&&i.frac!=="?" || +i.ea>0 || i.compMode));
   if(hasAmt || !e.trust){ e.trust="items"; e.groups={carb:"",protein:"",veg:"",fruit:""}; }
@@ -402,8 +452,8 @@ async function delMeal(){
 }
 async function saveDay(){
   normTimes(); readDay(); const l=R.l;
-  if(l.milk.some(m=>m.u==="box" && +m.n && !m.box)){ msg("เลือกขนาดกล่องนมก่อนบันทึก"); return; }
-  if((l.sleeps||[]).some(x=>x.e && !x.s)){ msg("ใส่เวลาเริ่มหลับของทุกรอบการนอน"); return; }
+  if(l.milk.some(m=>m.u==="box" && +m.n && !m.box)){ msg("กรุณาระบุขนาดกล่องนม"); return; }
+  if((l.sleeps||[]).some(x=>x.e && !x.s)){ msg("กรุณาระบุเวลาเริ่มหลับของทุกรอบการนอน"); return; }
   l.sleeps=(l.sleeps||[]).filter(x=>x.s); l.napS=""; l.napE="";
   l.date=R.d; l.updatedAt=Date.now(); l.milk=l.milk.filter(m=>m.t||m.ml); l.snacks=l.snacks.filter(s=>s.n);
   msg("กำลังบันทึก…");
@@ -467,7 +517,7 @@ async function aiFromPhotos(){
   if(!canImg){ msgEl().textContent="บัญชีนี้ยังส่งรูปให้ AI ไม่ได้ เปลี่ยนเป็นบันทึกเองได้"; return; }
   const phs=[...(e.photos.before||[]).map(p=>["ก่อนกิน",p]),...(e.photos.after||[]).map(p=>["หลังกิน",p])], blobs=[];
   for(const [,p] of phs){ try{ const r=await fetch(A.photoUrl(p)); blobs.push(await r.blob()); }catch(_){} }
-  if(!blobs.length){ msgEl().textContent="ยังไม่มีรูป เพิ่มรูปก่อนกินก่อน"; return; }
+  if(!blobs.length){ msgEl().textContent="กรุณาเพิ่มรูปอาหารก่อน"; return; }
   const btn=$("#l-aiphoto"); if(btn){ btn.disabled=true; btn.innerHTML=`${icon("sparkle")}กำลังวิเคราะห์…`; }
   msgEl().textContent="AI กำลังดูรูป ใช้เวลาราว 10–30 วินาที";
   const prompt = `คุณช่วยผู้ปกครองบันทึกมื้ออาหารของเด็กอายุ ${A.ageText()} จากรูป ${blobs.length} รูป ตามลำดับ: ${phs.map(x=>x[0]).join(", ")}
@@ -509,11 +559,11 @@ function renderFoodPicker(){
   const isNew = raw && !all.some(n=>n.toLowerCase()===q);
   if(f) f.innerHTML = isNew ? `<span class="fp-newtxt">“${esc(raw)}” ยังไม่มีในรายการ</span><button type="button" class="btn primary" id="fp-new">${icon("plus")}เพิ่มในรายการ</button>` : "";
 }
-function openFoodPicker(){
+function openFoodPicker(o){
   readMeal(); closeWhoModal();
   const m=document.createElement("div"); m.id="food-modal"; m.className="whomodal top"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
-  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide fp-card"><h3 id="wm-title">เพิ่มอาหารที่เสิร์ฟ</h3><div class="combo"><span class="combo-ic">${icon("search")}</span><input class="inp combo-in" id="fp-q" type="text" role="combobox" aria-controls="fp-list" aria-autocomplete="list" autocomplete="off" enterkeyhint="search" placeholder="เลือกหรือค้นหาเมนูที่เคยบันทึก" aria-label="เลือกหรือค้นหาเมนูที่เคยบันทึก"></div><ul class="fp-list" id="fp-list" role="listbox"></ul><div class="fp-foot" id="fp-foot"></div><div class="wm-act"><button type="button" class="btn" data-wm-close>ปิด</button></div></div>`;
-  $("#sheet").appendChild(m); renderFoodPicker();
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide fp-card"><h3 id="wm-title">${o&&o.comp?"เลือกส่วนประกอบ":"เพิ่มอาหารที่เสิร์ฟ"}</h3><div class="combo"><span class="combo-ic">${icon("search")}</span><input class="inp combo-in" id="fp-q" type="text" role="combobox" aria-controls="fp-list" aria-autocomplete="list" autocomplete="off" enterkeyhint="search" placeholder="${o&&o.comp?"เลือกหรือค้นหาส่วนประกอบ":"เลือกหรือค้นหาเมนูที่เคยบันทึก"}" aria-label="เลือกหรือค้นหา"></div><ul class="fp-list" id="fp-list" role="listbox"></ul><div class="fp-foot" id="fp-foot"></div><div class="wm-act"><button type="button" class="btn" data-wm-close>ปิด</button></div></div>`;
+  if(o&&o.comp) m.dataset.comp="1"; $("#sheet").appendChild(m); renderFoodPicker();
 }
 function moveFood(d){
   const l=$("#fp-list"), i=$("#fp-q"); if(!l||!i) return;
@@ -522,8 +572,9 @@ function moveFood(d){
   k = k<0 ? (d>0?0:o.length-1) : (k+d+o.length)%o.length;
   o[k].setAttribute("aria-selected","true"); o[k].scrollIntoView({block:"nearest"}); i.setAttribute("aria-activedescendant", o[k].id);
 }
-function addFood(n){ n=(n||"").trim(); if(!n) return; readMeal(); openItemModal(n); } // เลือกเมนูแล้วเปิด modal กรอกข้อมูลต่อ
+function addFood(n){ n=(n||"").trim(); if(!n) return; const fm=$("#food-modal"); if(fm&&fm.dataset.comp&&compCtx){ const c=compCtx; compCtx=null; openCompModal(c.k,{...c.d,n},c.cx); return; } readMeal(); openItemModal(n); } // เลือกเมนูแล้วเปิด modal กรอกข้อมูลต่อ
 panel.addEventListener("keydown", ev=>{
+  if(ev.key==="Enter" && ev.target.tagName==="INPUT" && ev.target.closest && ev.target.closest("#comp-modal")){ ev.preventDefault(); submitComp(); return; }
   if(!ev.target.closest || !ev.target.closest("#item-modal")) return;
   if(ev.key==="Escape"){ ev.stopPropagation(); closeWhoModal(); }
   else if(ev.key==="Enter" && ev.target.tagName==="INPUT"){ ev.preventDefault(); submitItem(); }
@@ -549,7 +600,8 @@ panel.addEventListener("click", ev=>{
   const wo=t.closest("[data-who]"); if(wo){ (R.tab==="meal"?R.e:R.l).by=wo.dataset.who; A.logDirty=true; closeWhoModal(); redraw(); return; }
   if(t.closest(".opt-more")){ openWhoPicker(); return; }
   if(t.closest(".opt-add")){ read(); openWhoModal(); return; }
-  if(t.closest("[data-wm-close]")){ closeWhoModal(); return; }
+  if(t.closest("#cm-pick")){ pickComp(); return; }
+  if(t.closest("[data-wm-close]")){ const fm=$("#food-modal"); if(fm&&fm.dataset.comp&&compCtx){ const c=compCtx; compCtx=null; openCompModal(c.k,c.d,c.cx); return; } closeWhoModal(); return; }
   if(t.closest("#l-newwho-ok")) return addWho();
   const op=t.closest(".opt"); if(op){ const set=op.closest(".opts"), name=set.dataset.name, multi=set.dataset.multi==="1", v=op.dataset.v; read();
     if(name==="meal"){ R.k=v; load(); draw(); return; }
@@ -566,15 +618,17 @@ panel.addEventListener("click", ev=>{
   const sz=t.closest("[data-size]"); if(sz){ readItems(); R.e.items[ix(sz)].size = sz.dataset.size==="m" ? null : sz.dataset.size; A.logDirty=true; redraw(); return; }
   const cm=t.closest("[data-cmode]"); if(cm){ readItems(); const i=R.e.items[ix(cm)]; i.compMode=!i.compMode; if(i.compMode){ i.frac=null; i.ea=""; } A.logDirty=true; redraw(); return; }
   const cs=t.closest("[data-cst]"); if(cs){ readItems(); const i=R.e.items[ix(cs)], c=i.comps[+cs.closest("[data-cx]").dataset.cx]; c.st = c.st===cs.dataset.cst?"":cs.dataset.cst; syncItem(i); A.logDirty=true; redraw(); return; }
-  if(t.closest(".c-open")){ readItems(); const i=R.e.items[ix(t)]; i.showComps=true; i.comps=i.comps||[]; if(!i.comps.length) i.comps.push({n:"",g:"",sa:"",su:"ช้อน"}); redraw(); const c=$$(`.sitem[data-ix="${ix(t)}"] .c-n`); if(c.length) c[c.length-1].focus(); return; }
-  if(t.closest(".c-add")){ readItems(); const k=ix(t); R.e.items[k].comps.push({n:"",g:"",sa:"",su:"ช้อน"}); redraw(); const c=$$(`.sitem[data-ix="${k}"] .c-n`); c[c.length-1].focus(); return; }
+  const cEd=t.closest(".c-edit"); if(cEd){ readItems(); const k=ix(cEd), cx=+cEd.closest("[data-cx]").dataset.cx, c=(R.e.items[k].comps||[])[cx]; if(c) openCompModal(k,{n:c.n,g:gOf(c),gt:true,sa:c.sa==null?"":String(c.sa),su:c.su||""},cx); return; }
+  if(t.closest(".c-open") || t.closest(".c-add")){ readItems(); openCompModal(ix(t)); return; }
+  if(t.closest("#cm-ok")){ submitComp(); return; }
+  if(t.closest("#cm-more")){ submitComp(true); return; }
+  const cmd=t.closest(".cm-del"); if(cmd){ delAddedComp(+cmd.closest(".cm-card").dataset.i); return; }
   if(t.closest(".c-del")){ readItems(); const i=R.e.items[ix(t)]; i.comps.splice(+t.closest("[data-cx]").dataset.cx,1); A.logDirty=true; redraw(); return; }
   const st=t.closest(".stseg button"); if(st && st.dataset.st && t.closest(".item")){ readItems(); R.e.items[+st.closest(".item").dataset.ix].st=st.dataset.st; A.logDirty=true; redraw(); return; }
+  const iEd=t.closest(".in-edit"); if(iEd){ readItems(); openItemModal(null, ix(iEd)); return; }
   if(t.closest(".in-del")){ readItems(); R.e.items.splice(ix(t),1); A.logDirty=true; redraw(); return; }
   const af=t.closest("[data-addf]"); if(af){ readMeal(); const n=af.dataset.addf; if(!R.e.items.some(i=>i.n===n)) R.e.items.push(newItem(n)); A.logDirty=true; redraw(); return; }
   if(t.closest("#l-additem")){ openFoodPicker(); return; }
-  if(t.closest("#im-addc")){ const c=$("#im-comps"); c.insertAdjacentHTML("beforeend", imCompRow()); imSyncCompUnits(c.lastElementChild); const r=c.lastElementChild.querySelector(".im-cn"); if(r) r.focus(); return; }
-  if(t.closest(".im-cdel")){ t.closest(".im-comp").remove(); return; }
   if(t.closest("#im-ok")){ submitItem(); return; }
   const nw=t.closest("[data-now]"); if(nw){ $("#"+nw.dataset.now).value=nowHM(); readMeal(); A.logDirty=true; redraw(); return; }
   const sp=t.closest("[data-step]"); if(sp){ const i=panel.querySelector(`.in-grp[data-g="${sp.dataset.step}"]`); i.value=Math.max(0,(parseFloat(i.value)||0)+parseFloat(sp.dataset.d)); readMeal(); if(!R.e.trust) R.e.trust="manual"; A.logDirty=true; redraw(); return; }
@@ -594,12 +648,15 @@ panel.addEventListener("click", ev=>{
 panel.addEventListener("change", ev=>{
   const t=ev.target;
   if(t.tagName==="SELECT") t.blur(); // เลือกแล้วปิด dropdown/picker ทันที ไม่ให้ค้างบนมือถือ
+  if(t.closest && t.closest("#comp-modal")){
+    if(t.id==="cm-g"){ t.dataset.touched="1"; cmSyncUnits(); }
+    else if(t.id==="cm-su"){ t.dataset.touched="1"; t.removeAttribute("aria-invalid"); if(parseFloat(($("#cm-sa")||{}).value)>0){ const q=$("#cm-qerr"); if(q) q.hidden=true; } }
+    else if(t.id==="cm-n"){ const g=$("#cm-g"); if(g&&!g.dataset.touched){ g.value=A.guessCat(t.value); cmSyncUnits(); } }
+    return; }
   if(t.closest && t.closest("#item-modal")){ // ช่องใน modal เพิ่มอาหาร: ไม่นับเป็นการแก้ข้อมูลจนกว่าจะกด "เพิ่มรายการ"
     if(t.id==="im-g"){ t.dataset.touched="1"; imSyncUnits(); }
-    else if(t.classList.contains("im-cg")){ t.dataset.touched="1"; imSyncCompUnits(t.closest(".im-comp")); }
-    else if(t.id==="im-su"||t.classList.contains("im-csu")) t.dataset.touched="1";
+    else if(t.id==="im-su") t.dataset.touched="1";
     else if(t.id==="im-n"){ const g=$("#im-g"); if(g&&!g.dataset.touched){ g.value=A.guessCat(t.value); imSyncUnits(); } }
-    else if(t.classList.contains("im-cn")){ const row=t.closest(".im-comp"), g=row.querySelector(".im-cg"); if(g&&!g.dataset.touched){ g.value=A.guessCat(t.value); imSyncCompUnits(row); } }
     return; }
   if(t.id==="fp-q") return; // ช่องค้นหาเมนู: ไม่นับเป็นการแก้ข้อมูล
   if(t.id==="l-date"){ if(!t.value) return; R.d=t.value; load(); draw(); return; }
@@ -611,7 +668,9 @@ panel.addEventListener("change", ev=>{
   A.logDirty=true;
 });
 panel.addEventListener("input", ev=>{ if(ev.target.id==="fp-q"){ renderFoodPicker(); return; }
-  if(ev.target.closest && ev.target.closest("#item-modal")){ const t=ev.target, e2=$("#im-err"); if(t.id==="im-n"){ if(e2) e2.hidden=true; const g=$("#im-g"); if(g&&!g.dataset.touched){ g.value=A.guessCat(t.value); imSyncUnits(); } } return; }
+  if(ev.target.closest && ev.target.closest("#comp-modal")){ const t=ev.target; if(t.id==="cm-n"){ const e3=$("#cm-err"); if(e3) e3.hidden=true; const g=$("#cm-g"); if(g&&!g.dataset.touched){ g.value=A.guessCat(t.value); cmSyncUnits(); } }
+    else if(t.id==="cm-sa"){ if(parseFloat(t.value)>0){ t.removeAttribute("aria-invalid"); const q=$("#cm-qerr"); if(q && ($("#cm-su")||{}).value) q.hidden=true; } } return; }
+  if(ev.target.closest && ev.target.closest("#item-modal")){ const t=ev.target, e2=$("#im-err"); if(t.id==="im-n"){ if(e2) e2.hidden=true; t.removeAttribute("aria-invalid"); const g=$("#im-g"); if(g&&!g.dataset.touched){ g.value=A.guessCat(t.value); imSyncUnits(); } } return; }
   A.logDirty=true;
   if(ev.target.closest && ev.target.closest("#l-items,#l-eaten")){ readItems(); const r=ev.target.closest(".sitem"); if(r){ const i=R.e.items[+r.dataset.ix], er=$(`#l-eaten .eitem[data-ix="${r.dataset.ix}"] .e-name`); if(er) er.textContent=i.n||"(ยังไม่ใส่ชื่อ)"; } const sm=$("#l-sum"); if(sm) sm.innerHTML=sumHTML(); $$("#l-eaten .eitem").forEach(r=>{ const c=r.querySelector(".conv"); if(c) c.innerHTML=convHTML(R.e.items[+r.dataset.ix]); }); }
   const r=ev.target.closest&&ev.target.closest("#l-milk .mrow"); if(!r) return;

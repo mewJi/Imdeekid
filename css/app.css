@@ -261,22 +261,24 @@ svg text{font-family:var(--f-body)}
 
 /* ===== sheet (log form) ===== */
 .sheet{position:fixed;inset:0;z-index:70;display:none}
-.sheet.on{display:block}
+.sheet.on{display:grid;place-items:center;padding:16px}
 .sheet .bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-.sheet .panel{position:absolute;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--bg-2);border-left:1px solid var(--line);display:flex;flex-direction:column;animation:slin .22s ease}
+/* ฟอร์มบันทึกทุกชนิด: modal กลางจอ (ทุกขนาดหน้าจอ) */
+.sheet .panel{position:relative;width:min(640px,100%);height:auto;max-height:min(90vh,860px);max-height:min(90dvh,860px);background:var(--bg-2);border:1px solid var(--line-2);border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;animation:slpop .2s ease}
+@keyframes slpop{from{transform:translateY(14px) scale(.98);opacity:0}to{transform:none;opacity:1}}
 @keyframes slin{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
 .sheet-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
 .sheet-h h2{font-size:1.1rem;margin-right:auto}
 .sheet-b{overflow:auto;padding:16px 18px 24px;display:grid;gap:4px;align-content:start;flex:1}
 .sheet-f{display:flex;gap:10px;align-items:center;padding:12px 18px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg-2)}
 .sheet-f .msg{margin-right:auto;font-size:.82rem;color:var(--ink-2)}
-/* มือถือ: bottom sheet สูงไม่เกิน ~82% ของจอ เห็นพื้นหลังด้านบน แตะพื้นหลังเพื่อปิดได้ */
+/* มือถือ: modal กลางจอ สูงไม่เกิน ~88% ของจอ แตะพื้นหลังเพื่อปิดได้ */
 @keyframes slup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 @media (max-width:600px){
   .sheet .bg{background:rgba(0,0,0,.45)}
-  .sheet .panel{top:auto;left:0;right:0;bottom:0;width:100%;height:auto;min-height:55vh;min-height:55dvh;max-height:82vh;max-height:82dvh;border-left:0;border-top:1px solid var(--line);border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.35);animation:slup .22s ease}
-  .sheet .panel::before{content:"";display:block;width:38px;height:4px;border-radius:4px;background:var(--line-2);margin:8px auto 0;flex:none}
-  .sheet-h{padding:6px 14px 8px}
+  .sheet.on{padding:12px}
+  .sheet .panel{max-height:88vh;max-height:88dvh;border-radius:16px}
+  .sheet-h{padding:10px 14px}
   .sheet-h h2{font-size:1rem}
   .sheet-b{padding:10px 14px 16px}
   .sheet-f{padding:8px 14px calc(8px + env(safe-area-inset-bottom));gap:8px}
@@ -500,7 +502,7 @@ details.fold>summary{cursor:pointer;font-weight:500;color:var(--ink-2);padding:4
 .ecomp{display:grid;grid-template-columns:1fr auto 64px 84px;gap:5px;align-items:center;font-size:.84rem}
 .ecomp input,.ecomp select{min-height:32px;padding:3px 7px;width:100%}
 .stepnote{display:flex;gap:8px;align-items:center;font-size:.8rem;color:var(--ink-3)}
-@media (max-width:600px){.sitem .row1{grid-template-columns:1fr 38px}.sitem .row1 select{grid-column:1/-1;grid-row:2}.comp{grid-template-columns:1fr 1fr 34px}.comp .c-g{grid-column:1/-1;grid-row:2}.ecomp{grid-template-columns:1fr auto}.ecomp input,.ecomp select{grid-row:2}}
+@media (max-width:600px){.sitem .row1{grid-template-columns:1fr 38px}.sitem .row1 select{grid-column:1/-1;grid-row:2}.comp{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 38px}.comp .c-n{grid-column:1;grid-row:1}.comp .c-g{grid-column:2/4;grid-row:1}.comp .c-sa{grid-column:1;grid-row:2}.comp .c-su{grid-column:2;grid-row:2}.comp .c-del{grid-column:3;grid-row:2;justify-self:end;width:38px;height:34px}.ecomp{grid-template-columns:1fr auto}.ecomp input,.ecomp select{grid-row:2}}
 
 td.off{opacity:.4;color:var(--ink-3)}
 
@@ -642,7 +644,7 @@ select,select.inp,.field select{-webkit-appearance:none;appearance:none;backgrou
 
 /* เส้นประคั่นพร้อมข้อความตรงกลาง */
 .dash-div{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--ink-3);font-size:.82rem}
-.dash-div::before,.dash-div::after{content:"";flex:1;border-top:1.5px dashed var(--line-2)}
+.dash-div::before,.dash-div::after{content:"";flex:1;border-top:1px dashed var(--line)}
 
 .range-row{margin:20px 0 -6px}
 
@@ -687,6 +689,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 /* ไอคอน ⓘ ข้างหัวข้อ + กล่องคำอธิบาย */
 .info-btn{display:inline-grid;place-items:center;width:28px;height:28px;margin-left:4px;border:0;background:transparent;color:var(--ink-3);cursor:pointer;border-radius:50%;vertical-align:middle;padding:0}
 .info-btn .ic{width:18px;height:18px}
+/* ชื่อหัวข้อ + ไอคอน ⓘ อยู่ติดกัน ไม่ตัดบรรทัด (ส่วน hint ฝั่งขวาเป็นฝ่ายย่อ/ขึ้นบรรทัดใหม่แทน) */
+.fsec>summary .stt{display:inline-flex;align-items:center;gap:0;flex:none;white-space:nowrap}
+.fsec>summary .stt .info-btn{margin-left:2px}
+.fsec>summary .hint{min-width:0}
 .info-btn:hover,.info-btn[aria-expanded="true"]{color:var(--accent-ink);background:var(--accent-soft)}
 .info-note{padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--ink-2);font-size:.82rem;line-height:1.5}
 .info-note[hidden]{display:none}
@@ -708,3 +714,64 @@ input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .whomodal .wm-card{grid-template-columns:minmax(0,1fr)}
 .fp-foot{min-width:0;flex-wrap:wrap}
 .fp-newtxt{flex:1 1 120px}
+/* ประเภทอาหาร + จำนวน + หน่วย อยู่บรรทัดเดียวกัน */
+.sitem .row-cat{display:grid;grid-template-columns:minmax(0,1fr) 64px 92px;gap:5px;align-items:center}
+.sitem .row-cat select,.sitem .row-cat input{width:100%;min-height:38px;padding:5px 8px}
+#l-additem{width:100%;justify-content:center}
+.empty #l-additem{width:auto;margin-top:8px}
+/* ป๊อปอัปส่วนประกอบ: กล่องบอกว่าเป็นของเมนูไหน (ให้ต่างจากป๊อปอัปเพิ่มเมนูอาหาร) */
+.parent-note{display:flex;align-items:center;gap:10px;margin-top:-4px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);border:1.5px dashed var(--accent);border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent-ink);font-size:.9rem}
+.parent-note .ic{width:20px;height:20px;flex:none}
+/* ป๊อปอัปส่วนประกอบ: หมวด + ปริมาณ + หน่วย อยู่บรรทัดเดียวกัน */
+.cm-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}
+.cm-row .field{min-width:0}
+.cm-qty{display:grid;grid-template-columns:64px 92px;gap:5px}
+.cm-qty .inp,.cm-row select.inp{width:100%;min-width:0;padding-left:8px;padding-right:8px}
+.cm-list{display:grid;gap:6px}
+.cm-list[hidden]{display:none}
+.cm-list-h{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--ink-3)}
+.cm-list-h b{font-weight:600;color:var(--ink-2)}
+.cm-card{display:grid;grid-template-columns:minmax(0,1fr) 36px;gap:6px;align-items:center;padding:6px 6px 6px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
+.cm-card .cp-main{display:grid;gap:1px;min-width:0}
+.cm-card .cp-n{font-weight:600;overflow-wrap:anywhere}
+.cm-card .icbtn{width:36px;height:36px;color:var(--bad)}
+/* ป๊อปอัปส่วนประกอบ: หัว (ชื่อ+เมนู) ล็อกด้านบน ปุ่มล็อกด้านล่าง เลื่อนเฉพาะเนื้อหาตรงกลาง */
+.wm-card.cm-wrap{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px)}
+.cm-head{display:grid;gap:12px;padding:18px 18px 12px;flex:none}
+.cm-body{display:grid;gap:12px;align-content:start;padding:2px 18px 14px;overflow-y:auto;min-height:0;flex:1}
+.cm-wrap .wm-act{flex:none;padding:12px 18px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg-2)}
+#cm-more{width:100%;justify-content:center}
+.parent-note span{min-width:0;overflow-wrap:anywhere}
+.parent-note b{font-weight:700}
+.empty .tiny{max-width:28ch}
+/* ตั้งค่า: จัดการหน่วยของแต่ละหมวด */
+.unit-box{padding:6px 0 14px;border-bottom:1px solid var(--line)}
+.unit-box:last-of-type{border-bottom:0}
+.unit-box .set-row{padding:10px 0;border-bottom:0}
+.unit-box .u-in{width:130px;min-height:34px;padding:4px 10px;font-size:.88rem}
+.unit-box .u-reset{margin-top:8px}
+/* ช่องเลือก/ค้นหาชื่อส่วนประกอบ (เปิดตัวค้นหาแบบเดียวกับเมนูอาหาร) */
+.pickfield{display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer;font-family:inherit;color:var(--ink)}
+.pickfield .pf-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pickfield.pf-empty .pf-t{color:var(--ink-3)}
+.pickfield .combo-ic{display:inline-flex;color:var(--ink-3)}
+.pickfield .combo-ic{position:static;transform:none;pointer-events:none}
+/* ส่วนประกอบในเมนู: แสดงเป็นการ์ดอ่านอย่างเดียว มีปุ่มแก้ไข/ลบ (แก้ในป๊อปอัป) */
+.comp.ro{grid-template-columns:minmax(0,1fr) 36px 36px;gap:6px;align-items:center;padding:6px 6px 6px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
+.comp.ro .cp-main{grid-column:1;grid-row:1;display:grid;gap:1px;min-width:0}
+.comp.ro .cp-n{font-weight:600;overflow-wrap:anywhere}
+.comp.ro .icbtn{width:36px;height:36px;margin:0}
+.comp.ro .c-edit{grid-column:2;grid-row:1}
+.comp.ro .c-del{grid-column:3;grid-row:1;justify-self:auto}
+.comp.ro .c-del{color:var(--bad)}
+/* อาหารที่เสิร์ฟ: การ์ดอ่านอย่างเดียว (ไอคอน | ชื่อ+หมวด·ปริมาณ | แก้ไข | ลบ) */
+.sitem.ro .row1{grid-template-columns:36px minmax(0,1fr) 36px 36px;gap:6px;align-items:center}
+.sitem.ro .cp-main{display:grid;gap:1px;min-width:0}
+.sitem.ro .fico{align-self:start;justify-self:start}
+.sitem.ro .cp-n{font-weight:600;overflow-wrap:anywhere}
+.sitem.ro .row1 .icbtn{width:36px;height:36px}
+.sitem.ro .in-del{color:var(--bad)}
+/* ข้อความเตือนใต้ช่องที่กรอกไม่ผ่าน */
+.field-err{margin:0;color:var(--bad)}
+.inp[aria-invalid="true"]{border-color:var(--bad)}
+.today.two{grid-template-columns:repeat(2,minmax(0,1fr))}
