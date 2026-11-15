@@ -27,7 +27,7 @@ function mealCard(d, M){
   ov += `<dl class="kv">`;
   ov += `<dt>ใครป้อน</dt><dd>${m.feedText?esc(m.feedText):'<span class="tiny">ไม่ได้บันทึก</span>'}</dd>`;
   if(m.time) ov += `<dt>เวลา</dt><dd class="num">${esc(m.time)}${m.durMin!=null?` · ${m.durMin} นาที`:""}</dd>`;
-  if(m.sitMax) ov += `<dt>นั่งนานสุด</dt><dd>ประมาณ ${m.sitMax} นาที</dd>`;
+  if(m.sitMax) ov += `<dt>ระยะเวลาที่นั่งทาน</dt><dd>ประมาณ ${m.sitMax} นาที</dd>`;
   if(m.env&&m.env.length) ov += `<dt>บรรยากาศ</dt><dd>${esc(m.env.join(" · "))}</dd>`;
   if(m.behav&&m.behav.length) ov += `<dt>พฤติกรรม</dt><dd><div class="chips">${m.behav.map(b=>`<span class="chip">${esc(b)}</span>`).join("")}</div></dd>`;
   const it = A.mealIntake(m);
@@ -91,7 +91,7 @@ function daylogCard(d){
   const milk=l?(l.milk||[]).reduce((s,x)=>s+(+x.ml||0),0):0;
   return `<div class="card flat">${A.cardHead("นม อาการ และการนอน", l&&l.by?`บันทึกโดย${esc(l.by)}`:"", btn)}
     <div class="stats4">
-      <div><span class="k">${icon("milk")}นม</span><span class="v num">${milk?milk+" มล.":"–"}</span>${l&&(l.milk||[]).some(x=>x.u==="box")?`<span class="tiny" style="display:block">${l.milk.filter(x=>+x.ml).map(x=>`${x.t?x.t+" ":""}${x.u==="box"?`${x.n} กล่อง×${x.box}`:x.ml+" มล."}`).join(" · ")}</span>`:""}</div>
+      <div><span class="k">${icon("milk")}นม</span><span class="v num">${milk?milk+" มล.":"–"}</span>${l&&(l.milk||[]).some(x=>x.u==="box"||x.u==="oz")?`<span class="tiny" style="display:block">${l.milk.filter(x=>+x.ml).map(x=>`${x.t?x.t+" ":""}${x.u==="box"?`${x.n} ขวด/กล่อง×${x.box}`:x.u==="oz"?`${x.oz} ออนซ์ (≈${x.ml} มล.)`:x.ml+" มล."}`).join(" · ")}</span>`:""}</div>
       <div><span class="k">อาการ</span><span class="v" style="font-size:.86rem">${l&&l.sym&&l.sym.length?esc(l.sym.join(", ")):"–"}</span></div>
       <div><span class="k">การนอน</span><span class="v" style="font-size:.86rem">${l&&A.sleeps(l).length?esc(A.sleepText(l)):"–"}</span></div>
       <div><span class="k">น้ำหนัก/ส่วนสูง</span><span class="v num">${g?`${g.weight?g.weight+" กก.":""} ${g.height?(g.heightText||g.height)+" ซม.":""}`:"–"}</span></div>

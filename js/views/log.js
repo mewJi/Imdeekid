@@ -9,11 +9,13 @@ const MICON = {bk:"sunrise", ln:"sun", dn:"sunset"};
 const whoList = cur => { const m=[...A.members()]; if(cur && !m.includes(cur)) m.push(cur); return m; }; // รายชื่อผู้บันทึก + คนที่เคยบันทึกไว้ (กันค่าเดิมหาย)
 const lastWho = () => A.LS.get("who") || A.members()[0];
 
-function newEntry(d,k){ return {date:d, meal:k, by:lastWho(), start:"", end:"", items:[], feed:"", follow:false, behav:[], sitMax:"", mood:"", screen:null, toys:null, snackBefore:null, with:[], place:"บ้าน", photos:{before:[],after:[]}, groups:{carb:"",protein:"",veg:"",fruit:""}, ai:null, trust:"", note:""}; }
+function newEntry(d,k){ return {date:d, meal:k, by:lastWho(), start:"", end:"", items:[], feed:"", follow:false, followLv:"", behav:[], vitamin:null, sit:"", ask:"", full:"", bargain:"", chew:[], refuse:[], screenLv:"", placeOther:"", factors:[], sitMax:"", mood:"", screen:null, toys:null, snackBefore:null, with:[], place:"บ้าน", photos:{before:[],after:[]}, groups:{carb:"",protein:"",veg:"",fruit:""}, ai:null, trust:"", note:""}; }
 function load(){
   const ex = S.entries[R.d+"_"+R.k];
   if(ex){ R.e = JSON.parse(JSON.stringify(ex)); R.mode = ex.mode || "manual"; }
   else { R.e = newEntry(R.d,R.k); const b=(A.base().meals[R.d]||{})[R.k]; if(b&&b.items) R.e.items=b.items.map(i=>({n:i.n,g:i.g,st:i.st,ea:"",eu:"คำ",sa:"",su:"",note:i.eaten})); }
+  if(R.e.place==="นอกบ้านอื่นๆ") R.e.place="อื่นๆ"; /* ข้อมูลเดิมใช้ชื่อเก่า */
+  if(Array.isArray(R.e.with)) R.e.with = [...new Set(R.e.with.map(x=>x==="กินพร้อมผู้ใหญ่ที่โต๊ะ"?"พร้อมผู้ใหญ่":x))];
   R.e.groups = R.e.groups||{carb:"",protein:"",veg:"",fruit:""}; R.e.photos = R.e.photos||{before:[],after:[]};
   const lx = S.daylogs[R.d]; R.l = lx ? JSON.parse(JSON.stringify(lx)) : {date:R.d, by:lastWho(), milk:[{t:"",ml:""}], water:"", snacks:[], sym:[], symNote:"", stool:"", napS:"", napE:"", weight:"", height:"", note:""};
   if(!R.l.milk||!R.l.milk.length) R.l.milk=[{t:"",ml:""}];
@@ -21,7 +23,7 @@ function load(){
   A.logDirty=false;
 }
 A.openLog = ({date, meal, tab}={}) => {
-  R.mode = null; R.d = date || today(); R.k = meal || A.guessMeal(); R.tab = DAYTABS.some(x=>x[0]===tab) ? tab : tab==="day" ? "milk" : "meal"; R.open={};
+  R.mode = null; R.d = date || today(); R.k = meal || A.guessMeal(); R.tab = DAYTABS.some(x=>x[0]===tab) ? tab : tab==="day" ? "milk" : "meal"; R.open={}; R.step=1;
   load(); $("#sheet").classList.add("on"); document.body.style.overflow="hidden"; draw(); setTimeout(()=>{ const f=$("#sheet-panel .sheet-h .icbtn"); if(f) f.focus(); },50);
 };
 A.closeLog = (force) => {
@@ -30,7 +32,9 @@ A.closeLog = (force) => {
   closeWhoModal(); $("#sheet").classList.remove("on"); document.body.style.overflow=""; A.logDirty=false;
 };
 /* ตัวเลือกเดี่ยวแบบ radio (ไม่ใช่ป้าย/ชิป) ใช้ตัวจัดการคลิก .opt เดียวกับ opts */
-const radioOpts = (name, list, sel) => `<div class="opts radio" data-name="${name}" data-multi="0" role="radiogroup">${list.map(o=>{ const v=Array.isArray(o)?o[0]:o, l=Array.isArray(o)?o[1]:o; return `<button type="button" class="opt" role="radio" aria-checked="${sel===v}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
+const radioOpts = (name, list, sel, dense) => `<div class="opts radio${dense?" dense":""}" data-name="${name}" data-multi="0" role="radiogroup">${list.map(o=>{ const v=Array.isArray(o)?o[0]:o, l=Array.isArray(o)?o[1]:o; return `<button type="button" class="opt" role="radio" aria-checked="${sel===v}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
+/* เลือกได้หลายข้อ แบบ checkbox list (ค่าที่เก็บ = ป้ายข้อความ) */
+const checkOpts = (name, list, sel) => `<div class="opts radio check dense" data-name="${name}" data-multi="1" role="group">${list.map(o=>`<button type="button" class="opt" role="checkbox" aria-checked="${(sel||[]).includes(o)}" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
 const opts = (name, list, sel, multi) => `<div class="opts" data-name="${name}" data-multi="${multi?1:0}">${list.map(o=>{ const v=Array.isArray(o)?o[0]:o, l=Array.isArray(o)?o[1]:o; const on = multi ? (sel||[]).includes(v) : sel===v; return `<button type="button" class="opt" aria-pressed="${on}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
 const yn = (name, v) => opts(name, [["yes","มี / ใช่"],["no","ไม่มี / ไม่ใช่"]], v===true?"yes":v===false?"no":"");
 function knownFoods(){
@@ -45,7 +49,8 @@ const TYPEINFO = {
   sleep:{t:"บันทึกการนอน", ic:"moon"}, health:{t:"บันทึกอาการและการขับถ่าย", ic:"thermo"}, body:{t:"บันทึกน้ำหนักและส่วนสูง", ic:"scale"},
 };
 const DAYTABS = [["milk","นม"],["snack","ของว่าง"],["sleep","การนอน"],["health","สุขภาพและการขับถ่าย"],["body","น้ำหนักและส่วนสูง"]];
-const BOX = [110,125,180,200];
+const BOX = [110,125,180,220]; /* ขนาดขวด/กล่องนม (มล.) */
+const MLP = [30,60,120,180,240], OZP = [1,2,3,4,5,6,7,8], OZ_ML = 29.5735; /* ตัวเลือกเร็วของ มล./ออนซ์ · 1 ออนซ์ ≈ 29.57 มล. */
 const lastBox = () => { try{ return +localStorage.getItem("imdee:box")||""; }catch(_){ return ""; } };
 function tabHas(v,l){ if(!l) return false;
   if(v==="milk") return (l.milk||[]).some(m=>+m.ml) || !!l.water;
@@ -54,14 +59,23 @@ function tabHas(v,l){ if(!l) return false;
   if(v==="health") return !!((l.sym||[]).length||l.stool||l.symNote||l.note);
   if(v==="body") return !!(l.weight||l.height);
   return false; }
-function milkTotal(m){ return m.u==="box" ? (m.box && +m.n ? Math.round(m.box*m.n) : "") : m.ml; }
+function milkTotal(m){ return m.u==="box" ? (m.box && +m.n ? Math.round(m.box*m.n) : "") : m.u==="oz" ? (+m.oz>0 ? Math.round(m.oz*OZ_ML) : "") : m.ml; }
+const MILK_U = [["ml","มล."],["oz","ออนซ์"],["box","ขวด/กล่อง"]];
 function milkRow(m, ix){
-  const box = m.u==="box", tot = milkTotal(m);
-  return `<div class="mrow milkrow" data-ix="${ix}"><input ${A.TIME_ATTR} class="inp in-mt" value="${esc(m.t||"")}" aria-label="เวลา">
-    <span class="stseg mu" role="group" aria-label="หน่วย"><button type="button" class="m-u" data-u="ml" aria-pressed="${!box}">มล.</button><button type="button" class="m-u" data-u="box" aria-pressed="${box}">กล่อง</button></span>
-    ${box?`<select class="inp in-box" aria-label="ขนาดกล่อง"><option value="">ขนาดกล่อง</option>${BOX.map(v=>`<option value="${v}"${+m.box===v?" selected":""}>${v} มล.</option>`).join("")}</select><span class="tiny">×</span><input class="inp num in-mn" style="width:64px" ${numAttr(m.n??"1")} inputmode="decimal" value="${esc(m.n??"1")}" aria-label="จำนวนกล่อง"><span class="tiny">กล่อง</span>`
-      :`<input class="inp num in-ml" style="width:100px" ${numAttr(m.ml||"")} inputmode="numeric" value="${esc(m.ml||"")}" placeholder="มล." aria-label="ปริมาณนม มล."><span class="tiny">มล.</span>`}
-    ${box?`<b class="m-tot num">${tot?`= ${tot} มล.`:'<span class="tiny" style="color:var(--warn)">เลือกขนาดกล่อง</span>'}</b>`:""}
+  const u = m.u==="box"||m.u==="oz" ? m.u : "ml", tot = milkTotal(m);
+  const chip = (v,cur,suf="") => `<button type="button" class="m-chip" data-v="${v}" aria-pressed="${+cur===v}">${v}${suf}</button>`;
+  let amt;
+  if(u==="ml") amt = `<div class="m-cap">ปริมาณ (มล.)</div><div class="m-chips">${MLP.map(v=>chip(v,m.ml)).join("")}</div>
+    <div class="m-custom"><input class="inp num in-ml" ${numAttr(m.ml||"")} inputmode="numeric" value="${esc(m.ml||"")}" placeholder="กรอกเอง" aria-label="ปริมาณนม มล."><span class="tiny">มล.</span></div>`;
+  else if(u==="oz") amt = `<div class="m-cap">ปริมาณ (ออนซ์)</div><div class="m-chips">${OZP.map(v=>chip(v,m.oz)).join("")}</div>
+    <div class="m-custom"><input class="inp num in-oz" ${numAttr(m.oz||"")} inputmode="decimal" value="${esc(m.oz||"")}" placeholder="กรอกเอง" aria-label="ปริมาณนม ออนซ์"><span class="tiny">ออนซ์</span><b class="m-tot num">${tot?`≈ ${tot} มล.`:""}</b></div>`;
+  else { const sizes=[...BOX, ...(m.box && !BOX.includes(+m.box) ? [+m.box] : [])].sort((a,b)=>a-b);
+    amt = `<div class="m-cap">ขนาดต่อขวด/กล่อง (มล.)</div><div class="m-chips">${sizes.map(v=>chip(v,m.box)).join("")}</div>
+    <div class="m-custom"><span class="tiny">จำนวน</span><input class="inp num in-mn" ${numAttr(m.n??"1")} inputmode="decimal" value="${esc(m.n??"1")}" aria-label="จำนวนขวด/กล่อง"><span class="tiny">ขวด/กล่อง</span><b class="m-tot num">${tot?`= ${tot} มล.`:'<span class="tiny" style="color:var(--warn)">เลือกขนาด</span>'}</b></div>`; }
+  return `<div class="mrow milkrow milk2" data-ix="${ix}">
+    <div class="m-time"><span class="m-cap">เวลา</span><input ${A.TIME_ATTR} class="inp in-mt" value="${esc(m.t||"")}" aria-label="เวลา"></div>
+    <div class="m-type"><span class="m-cap">ประเภทการกินนม</span><span class="stseg mu" role="group" aria-label="ประเภทการกินนม">${MILK_U.map(([v,l])=>`<button type="button" class="m-u" data-u="${v}" aria-pressed="${u===v}">${l}</button>`).join("")}</span></div>
+    <div class="m-amt">${amt}</div>
     <button type="button" class="icbtn m-del" aria-label="ลบรอบนม">${icon("x")}</button></div>`;
 }
 /* ผู้บันทึก: ถ้าเกิน 1 บรรทัด ให้ย่อเหลือบรรทัดเดียว + ปุ่ม "ดูเพิ่ม" (กดเพื่อขยาย/ย่อ) */
@@ -221,7 +235,10 @@ function servedRow(i, ix){
   </div>`;
 }
 /* ---- เมนูที่ทาน: เมนูที่มีส่วนประกอบ มี 2 โหมด "กินหมด" (คิดตามสัดส่วนที่เสิร์ฟ) / "กินบางอย่าง, ไม่กิน" (ระบุเป็นเศษส่วนทีละส่วนประกอบ) ---- */
-const CFRACS = [[1,"หมด"],[.75,"¾"],[.5,"½"],[.25,"¼"],[0,"ไม่กิน"]];
+const CFRACS = [[1,"กินหมด"],[.75,"¾"],[.5,"½"],[.25,"¼"],[0,"ไม่กิน"]];
+/* เมื่อเลือก "ไม่กิน": ระบุลักษณะที่เกิดขึ้น (ไม่บังคับ เลือกได้ข้อเดียว; ไม่นำมาคำนวณสารอาหารเหมือนกัน) */
+const NOEAT = ["เข้าปากแล้วคายทันที","เคี้ยวแล้วคาย","อมสักพักแล้วคาย","กินแล้วอ้วกออกมา"];
+const noEatHTML = cur => `<div class="noeat"><div class="m-cap">เกิดอะไรขึ้น <span class="tiny">ไม่บังคับ</span></div><div class="fracs">${NOEAT.map(v=>`<button type="button" data-noeat="${esc(v)}" aria-pressed="${cur===v}">${esc(v)}</button>`).join("")}</div></div>`;
 const compItems = i => (i.comps||[]).filter(c=>c.n);
 const modeOf = i => !compItems(i).length ? null : (i.mode || (i.compMode ? "some" : (i.st==="ate" ? "all" : (i.st==="none" ? "none" : null))));
 const compFrac = c => { if(c.cf!=null) return +c.cf; if(c.st==="none") return 0;
@@ -236,7 +253,7 @@ function nutBox(i, ix){
     return `<li><span>${esc(p.n)}${p.eaten?` <span class="tiny">กิน ${esc(p.eaten)}</span>`:""}</span><span>${r.known?esc(A.servText(r.serv)):`<span class="tiny">ยังแปลงไม่ได้</span>`}</span></li>`; }).join("");
   const tot = A.mealIntake({items:[di]});
   const sum = di.parts.length && di.parts.every(p=>p.st==="none") ? "ไม่กินเลย · ไม่นำมาคำนวณ" : tot && tot.ok ?`${Math.round(tot.kcal)} kcal · โปรตีน ${rnd(tot.p)} ก. · แคลเซียม ${Math.round(tot.ca)} มก.` : "ยังคำนวณไม่ได้";
-  const open = R.open["nut"+ix]!==false;
+  const open = R.open["nut"+ix]===true; /* ค่าเริ่มต้นพับไว้ */
   return `<details class="nutbox" data-nk="${ix}"${open?" open":""}><summary><span>สารอาหารที่ได้</span><b>${esc(sum)}</b></summary><ul>${rows}</ul><p class="tiny">ค่าประมาณจากปริมาณที่ระบุ ไม่ใช่การชั่งจริง</p></details>`;
 }
 function eatenRowC(i, ix){
@@ -244,20 +261,21 @@ function eatenRowC(i, ix){
   let h = `<div class="eitem" data-ix="${ix}"><div class="eh"><b class="e-name">${esc(i.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny e-served">เสิร์ฟ ${esc(fmtAmt(i.sa,i.su)||"ไม่ระบุปริมาณ")} · ${comps.length} ส่วนประกอบ</span></div>
     <div class="stseg modeseg" role="group" aria-label="กินหมด กินบางส่วน หรือไม่กินเลย">${[["all","กินหมด"],["some","กินบางส่วน"],["none","ไม่กินเลย"]].map(([v,l])=>`<button type="button" data-emode="${v}" aria-pressed="${mode===v}">${l}</button>`).join("")}</div>`;
   if(mode==="all") h += `<p class="tiny" style="margin:0">คิดตามสัดส่วนปริมาณที่เสิร์ฟของทุกส่วนประกอบ</p>`;
-  if(mode==="some") h += `<div class="ecomps">${(i.comps||[]).map((c,cx)=>!c.n?"":`<div class="ecomp2" data-cx="${cx}"><div class="cp-main"><b class="cp-n">${esc(c.n)}</b><span class="tiny">เสิร์ฟ ${esc(fmtAmt(c.sa,c.su)||"–")}</span></div><div class="fracs cf" role="group" aria-label="กิน ${esc(c.n)} ไปเท่าไหร่">${CFRACS.map(([f,l])=>`<button type="button" data-cfrac="${f}" aria-pressed="${compFrac(c)===f}">${l}</button>`).join("")}</div></div>`).join("")}</div>`;
+  if(mode==="none") h += noEatHTML(i.noEat);
+  if(mode==="some") h += `<div class="ecomps">${(i.comps||[]).map((c,cx)=>!c.n?"":`<div class="ecomp2" data-cx="${cx}"><div class="cp-main"><b class="cp-n">${esc(c.n)}</b><span class="tiny">เสิร์ฟ ${esc(fmtAmt(c.sa,c.su)||"–")}</span></div><div class="fracs cf" role="group" aria-label="กิน ${esc(c.n)} ไปเท่าไหร่">${CFRACS.map(([f,l])=>`<button type="button" data-cfrac="${f}" aria-pressed="${compFrac(c)===f}">${l}</button>`).join("")}</div>${compFrac(c)===0?noEatHTML(c.noEat):""}</div>`).join("")}</div>`;
   if(mode==="all"||mode==="some") h += nutBox(i, ix);
   return h + `</div>`;
 }
+/* เมนูที่ไม่มีส่วนประกอบ: เลือกว่ากินไปเท่าไหร่ของที่เสิร์ฟ (หมด ¾ ½ ¼ ไม่กิน) */
+const itemFrac = i => i.st==="none" ? 0 : (i.frac!=null && i.frac!=="?" ? +i.frac : (i.st==="ate" && !(num(i.ea)>0) ? 1 : null));
 function eatenRow(i, ix){
   if(compItems(i).length) return eatenRowC(i, ix);
-  const eat = i.st==="ate"||i.st==="part", sa = num(i.sa), comps = (i.comps||[]).filter(c=>c.n);
-  const cur = eat ? "eat" : i.st;
-  let h = `<div class="eitem${i.st&&!eat?" off":""}" data-ix="${ix}"><div class="eh"><b class="e-name">${esc(i.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny e-served">เสิร์ฟ ${esc(fmtAmt(i.sa,i.su)||"ไม่ระบุปริมาณ")}${comps.length?` · ${comps.length} ส่วนประกอบ`:""}</span></div>
-    <div class="stseg" role="group" aria-label="กินหรือไม่">${[["eat","กิน","ate"],["none","ไม่กิน","none"],["spit","คาย","spit"],["unk","ไม่ทราบ","unk"]].map(([v,l,c])=>`<button type="button" class="${c}" data-eat="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")}</div>`;
-  if(eat){
-    if(!i.compMode) h += `<div class="fracs"><span>กินไป</span>${sa!=null?FRACS.map(([f,l])=>`<button type="button" data-frac="${f}" aria-pressed="${i.frac!=null&&+i.frac===f}">${l}</button>`).join("")+"<span>หรือ</span>":""}<input class="inp num in-ea" ${numAttr(i.frac!=null?"":i.ea)} inputmode="decimal" value="${i.frac!=null?"":esc(i.ea??"")}" placeholder="จำนวน" aria-label="จำนวนที่กิน">${unitSel("in-eu", i.eu, i.su||"คำ", gOf(i))}<button type="button" data-frac="?" aria-pressed="${i.frac==="?"}">ไม่ทราบปริมาณ</button></div>
-      ${i.frac!=null&&i.frac!=="?"&&sa!=null?`<span class="tiny">= ${esc(fmtAmt(rnd(sa*i.frac), i.su))}${comps.length?" (ใช้สัดส่วนนี้กับทุกส่วนประกอบ)":""}</span>`:""}`;
-    const chunky = [i.eu,i.su].includes("ชิ้น") || [i.eu,i.su].includes("คำ") || (i.comps||[]).some(c=>["ชิ้น","คำ"].includes(c.su));
+  const cur = itemFrac(i), eat = cur!==0;
+  let h = `<div class="eitem${cur===0?" off":""}" data-ix="${ix}"><div class="eh"><b class="e-name">${esc(i.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny e-served">เสิร์ฟ ${esc(fmtAmt(i.sa,i.su)||"ไม่ระบุปริมาณ")}</span></div>
+    <div class="fracs cf" role="group" aria-label="กิน ${esc(i.n||"")} ไปเท่าไหร่">${CFRACS.map(([f,l])=>`<button type="button" data-ifrac="${f}" aria-pressed="${cur===f}">${l}</button>`).join("")}</div>`;
+  if(cur===0) h += noEatHTML(i.noEat);
+  if(eat && cur!=null){
+    const chunky = [i.eu,i.su].includes("ชิ้น") || [i.eu,i.su].includes("คำ");
     if(chunky) h += `<div class="fracs"><span>ขนาดชิ้น/คำ</span>${Object.entries(A.SIZE).map(([k,z])=>`<button type="button" data-size="${k}" aria-pressed="${(i.size||"m")===k}">${z.lab}</button>`).join("")}<span class="tiny">เล็ก = ครึ่งหนึ่งของขนาดมาตรฐาน · ใหญ่ = 1.5 เท่า</span></div>`;
     h += `<div class="conv">${convHTML(i)}</div>`;
   }
@@ -302,6 +320,7 @@ function hintFor(id){
   const e=R.e, l=R.l;
   if(id==="served"){ const n=e.items.filter(i=>i.n).length; return reqTag(n>0,"จำเป็น", n?`${n} รายการ`:""); }
   if(id==="eaten"){ const named=e.items.filter(i=>i.n), d=named.filter(itemDone).length; return reqTag(d>0,"จำเป็น", named.length?`${d}/${named.length} รายการ`:""); }
+  if(id==="vitamin") return reqTag(e.vitamin!=null,"จำเป็น", e.vitamin===true?"มี":e.vitamin===false?"ไม่มี":"");
   if(id==="time"){ const dur = e.start&&e.end ? ((toMin(e.end)-toMin(e.start))+1440)%1440 : null; return reqTag(!!(e.start||e.end),"จำเป็น", dur!=null?`รวม ${dur} นาที`:""); }
   if(id==="milk"){ const ms=milkSum(l); return reqTag(ms>0||num(l.water)>0,"จำเป็น", ms?`รวม ${ms} มล.`:""); }
   if(id==="snack"){ const n=(l.snacks||[]).filter(s=>s.n).length; return reqTag(n>0,"จำเป็น", n?`${n} รายการ`:""); }
@@ -321,6 +340,7 @@ function validateLog(){
     const okT = v => /^\d{2}:\d{2}$/.test(v||"");
     if(!okT(e.start)) missing.push("เวลาเริ่ม");
     if(!okT(e.end)) missing.push("เวลาจบ");
+    if(e.vitamin==null) missing.push("วิตามิน/อาหารเสริม");
   } else if(R.tab==="milk"){
     if(!(milkSum(l)>0 || num(l.water)>0)) missing.push("ปริมาณนมหรือน้ำเปล่า");
     if((l.milk||[]).some(m=>m.u==="box" && +m.n && !m.box)) missing.push("ขนาดกล่องนม");
@@ -339,12 +359,15 @@ function validateLog(){
 }
 /* อัปเดตสถานะปุ่มบันทึก + แท็ก ✓ ของหัวข้อ (เรียกหลังพิมพ์/กดทุกครั้ง) */
 function refreshSave(){
-  const btn=$("#l-save")||$("#l-dsave"); if(!btn || !R.e || !$("#sheet").classList.contains("on")) return;
+  const btn=$("#l-save")||$("#l-dsave"), nx=$("#l-next"); if((!btn && !nx) || !R.e || !$("#sheet").classList.contains("on")) return;
   read(); const v=validateLog();
+  if(nx && (R.step||1)===1){ nx.disabled = !v.ok; nx.title = v.ok ? "" : "กรุณาระบุ: "+v.missing.join(" · "); } /* ขั้น 1 ต้องกรอกครบก่อนไปต่อ */
+  const sd=document.querySelector('.stepper li:first-child:not(.on)'); if(sd){ sd.classList.toggle("done", !!v.ok); const dt=sd.querySelector(".sdot"); if(dt) dt.innerHTML = v.ok ? icon("check") : "1"; }
+  if(!btn) return;
   btn.disabled = !v.ok || !S.canWrite;
   btn.title = v.ok ? "" : "กรุณาระบุ: "+v.missing.join(" · ");
   const m=$("#lmsg"); if(m && (m.textContent||"").startsWith("กรุณาระบุ: ")) m.textContent=""; /* ไม่แสดงรายการที่ยังขาดที่แถบล่างแล้ว (ดูแท็ก "จำเป็น" ที่หัวข้อแทน) */
-  ["served","eaten","time","milk","snack","nap","sym","body"].forEach(id=>{ const h=$(`details[data-sec="${id}"] .hint`); if(h) h.innerHTML=hintFor(id); });
+  ["served","eaten","time","vitamin","milk","snack","nap","sym","body"].forEach(id=>{ const h=$(`details[data-sec="${id}"] .hint`); if(h) h.innerHTML=hintFor(id); });
 }
 function draw(){
   const P=$("#sheet-panel"), e=R.e, l=R.l, ex=!!S.entries[R.d+"_"+R.k];
@@ -356,7 +379,7 @@ function draw(){
     const base=(A.base().meals[R.d]||{})[R.k];
     b += `<div class="field" style="margin-top:10px">มื้อ<div class="opts mealpick" data-name="meal" data-multi="0" role="group" aria-label="มื้อ">${MEALS.map(M=>`<button type="button" class="opt" aria-pressed="${R.k===M.k}" data-v="${M.k}">${icon(MICON[M.k]||"bowl")}<b>${esc(M.short)}</b></button>`).join("")}</div></div>`;
     if(ex) b += `<p class="tiny">กำลังแก้ไขบันทึกเดิมของ${MEAL[R.k].name}</p>`; else if(base&&base.items) b += `<p class="tiny">เติมรายการอาหารจากข้อมูลเดิมไว้ให้แล้ว แก้หรือเพิ่มได้</p>`;
-    let no = 0;
+    let S1="", S2="", S3="", n1=0, n2=0, n3=0; /* เนื้อหาของแต่ละขั้น (stepper) */
     if(!R.mode){
       b += `<div class="modepick"><p class="sub" style="margin:0">จะบันทึก${MEAL[R.k].name}แบบไหน</p>
         <button type="button" class="mcard" data-mode="manual"><span class="mic">${icon("edit")}</span><b>บันทึกเอง</b><span>ใส่เมนูและปริมาณเองเป็นหน่วยครัวเรือน เหมาะกับมื้อที่ไม่ได้ถ่ายรูป</span></button>
@@ -367,45 +390,64 @@ function draw(){
     b += `<div class="modebar"><span>${R.mode==="photo"?`${icon("sparkle")} ประเมินจากรูปด้วย AI`:`${icon("edit")} บันทึกเอง`}</span><button type="button" class="ctog" data-mode="">เปลี่ยนวิธี</button></div>`;
     if(R.mode==="photo"){
       const nb=(e.photos.before||[]).length, na=(e.photos.after||[]).length, done=!!(e.ai&&e.ai.fromPhotos);
-      b += sec("aiphoto",++no,"รูปก่อนและหลังกิน", done?"AI วิเคราะห์แล้ว":"ขั้นแรก", `
+      S1 += sec("aiphoto",++n1,"รูปก่อนและหลังกิน", done?"AI วิเคราะห์แล้ว":"ขั้นแรก", `
         <div class="frow frow-col">${photoSlot("before","ก่อนกิน (ตอนเสิร์ฟ)")}${photoSlot("after","หลังกิน (ที่เหลือ)")}</div><p class="tiny" id="l-up"></p>
         <div class="aibox"><button type="button" class="btn primary" id="l-aiphoto" ${nb||na?"":"disabled"}>${icon("sparkle")}${done?"ให้ AI วิเคราะห์ใหม่":"ให้ AI วิเคราะห์รูป"}</button>
           <span class="tiny" id="l-aimsg">${done?`วิเคราะห์จากรูป ${e.ai.withPhotos} รูป · ความมั่นใจ${({low:"ต่ำ",medium:"ปานกลาง",high:"สูง"})[e.ai.confidence]||"–"}${e.ai.note?" · "+esc(e.ai.note):""}`:nb||na?`มีรูปก่อนกิน ${nb} · หลังกิน ${na}${na?"":" · ไม่มีรูปหลังกิน AI จะประเมินได้แค่ปริมาณที่เสิร์ฟ"}`:"เพิ่มรูปก่อนกินอย่างน้อย 1 รูป ถ้ามีรูปหลังกินด้วย AI จะประเมินปริมาณที่กินจริงได้"}</span></div>
         ${done?`<p class="note" style="margin:0">AI กรอกรายการ ส่วนประกอบ และปริมาณในขั้นถัดไปให้แล้ว ตรวจและแก้ให้ตรงกับที่เห็นจริงก่อนบันทึก</p>`:`<p class="tiny" style="margin:0">ถ่ายจากด้านบนให้เห็นจานทั้งใบ วางช้อนไว้ข้างจานช่วยให้ AI กะขนาดได้ดีขึ้น</p>`}`, done);
-      if(!done){ b += `<p class="tiny" style="text-align:center">ไม่มีรูป หรืออยากกรอกเอง <button type="button" class="ctog" data-mode="manual" style="display:inline">ข้ามไปบันทึกเอง</button></p>`;
+      if(!done){ b += S1 + `<p class="tiny" style="text-align:center">ไม่มีรูป หรืออยากกรอกเอง <button type="button" class="ctog" data-mode="manual" style="display:inline">ข้ามไปบันทึกเอง</button></p>`;
         P.innerHTML = hd + `<div class="sheet-b" id="sheet-b">${b}</div><div class="sheet-f"><span class="msg" id="lmsg"></span></div>`; return; }
     }
     const dur = e.start&&e.end ? ((toMin(e.end)-toMin(e.start))+1440)%1440 : null;
     const named = e.items.filter(i=>i.n), nItems = named.length, nDone = named.filter(itemDone).length;
-    b += sec("served",++no,`เมนูที่เสิร์ฟ<button type="button" class="info-btn" data-info="info-served" aria-label="วิธีใส่ปริมาณ" aria-expanded="false">${icon("info")}</button>`, hintFor("served"), `
+    S1 += sec("served",++n1,`เมนูที่เสิร์ฟ<button type="button" class="info-btn" data-info="info-served" aria-label="วิธีใส่ปริมาณ" aria-expanded="false">${icon("info")}</button>`, hintFor("served"), `
       <div class="info-note" id="info-served" hidden>ใส่ปริมาณเป็นหน่วยที่ใช้จริงที่บ้าน เช่น 1 ทัพพี 1 ฟอง 5 ชิ้น ไม่ต้องชั่ง · เมนูรวม เช่น สปาเก็ตตี้ครีมซอสแซลมอน กด "แตกส่วนประกอบ" เพื่อแยกเส้น แซลมอน ซอส ผัก</div>
 
       <datalist id="food-list">${knownFoods().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
       <div style="display:grid;gap:8px" id="l-items">${e.items.length ? e.items.map(servedRow).join("") : `<div class="empty">${icon("bowl")}<b>ยังไม่มีเมนูที่เสิร์ฟ</b><span class="tiny">เพิ่มเมนูที่เสิร์ฟลูกในมื้อนี้</span><button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มเมนูที่เสิร์ฟ</button></div>`}</div>
       ${e.items.length ? `<button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มเมนูที่เสิร์ฟ</button>` : ""}`, nItems>0);
-    b += sec("eaten",++no,"เมนูที่ทาน", hintFor("eaten"), nItems ? `
+    S1 += sec("eaten",++n1,"เมนูที่ทาน", hintFor("eaten"), nItems ? `
       <div style="display:grid;gap:8px" id="l-eaten">${e.items.map((i,ix)=>i.n?eatenRow(i,ix):"").join("")}</div>` : `
       <div class="empty" id="l-eaten">${icon("bowl")}<b>กรุณาระบุเมนูที่เสิร์ฟก่อน</b></div>`, nItems&&nDone===nItems);
-    b += sec("time",++no,"เวลา", hintFor("time"), `<div class="frow frow-col">
+    S1 += sec("time",++n1,"เวลา", hintFor("time"), `<div class="frow frow-col">
       <label class="field">เริ่ม<span class="tin"><input ${A.TIME_ATTR} id="l-start" value="${esc(e.start)}"><button type="button" class="btn sm" data-now="l-start">ตอนนี้</button></span></label>
       <label class="field">จบ<span class="tin"><input ${A.TIME_ATTR} id="l-end" value="${esc(e.end)}"><button type="button" class="btn sm" data-now="l-end">ตอนนี้</button></span></label></div>`, dur!=null);
-    b += sec("feed",++no,"การป้อนและพฤติกรรม", (FEED.find(x=>x[0]===e.feed)||[])[1]||"", `
-      <div class="field">วิธีกิน${radioOpts("feed", FEED, e.feed)}</div>
-      <label class="check"><input type="checkbox" id="l-follow" ${e.follow?"checked":""}> ต้องเดินตามป้อน</label>
-      <label class="field">นั่งต่อเนื่องนานสุด (นาที)<input id="l-sit" ${numAttr(e.sitMax)} inputmode="numeric" class="num" value="${esc(e.sitMax)}" placeholder="ประมาณ"></label>
-      <div class="field">พฤติกรรมที่เกิดขึ้น (เลือกได้หลายข้อ)${opts("behav", BEHAV, e.behav, true)}</div>`, !!e.feed);
-    b += sec("env",++no,"บรรยากาศก่อนและระหว่างมื้อ", "ไม่บังคับ", `
-      <div class="field">ก่อนกิน${opts("mood", MOOD, e.mood)}</div>
-      <div class="frow"><div class="field">ทีวี/มือถือเปิดอยู่${yn("screen",e.screen)}</div><div class="field">ของเล่นที่โต๊ะ${yn("toys",e.toys)}</div><div class="field">นม/ขนมภายใน 1 ชม. ก่อนมื้อ${yn("snackBefore",e.snackBefore)}</div></div>
-      <div class="field">กินด้วยกันกับ${opts("with", [...A.members(),"กินพร้อมผู้ใหญ่ที่โต๊ะ","เด็กคนอื่น"], e.with, true)}</div>
-      <div class="field">ที่ไหน${opts("place", PLACES, e.place)}</div>`);
-    if(R.mode!=="photo") b += sec("photo",++no,"รูปก่อน/หลังกิน", "ไม่บังคับ", `<div class="frow frow-col">${photoSlot("before","ก่อนกิน")}${photoSlot("after","หลังกิน")}</div><p class="tiny" id="l-up"></p>`);
-    b += sec("note",++no,"เล่าเพิ่ม", "ไม่บังคับ", `<textarea class="inp" id="l-note" rows="3" placeholder="เช่น เห็นอาหารแล้วเดินหนี ยอมกินเมื่อแม่นั่งกินด้วย">${esc(e.note)}</textarea>`);
-    f = `<span class="msg" id="lmsg">${S.canWrite?"":"บัญชีนี้ดูได้อย่างเดียว"}</span>${ex?`<button type="button" class="btn danger" id="l-del">${icon("trash")}ลบ</button>`:""}<button type="button" class="btn primary" id="l-save" disabled>บันทึก${MEAL[R.k].name}</button>`;
+    S1 += sec("vitamin",++n1,"วิตามิน/อาหารเสริม", hintFor("vitamin"), radioOpts("vitamin", A.OPT.YN, e.vitamin===true?"yes":e.vitamin===false?"no":"", true));
+    const OP = A.OPT, q = (lab, inner, note) => `<div class="qgroup"><div class="ql">${lab}${note?` <span class="tiny">${note}</span>`:""}</div>${inner}</div>`;
+    S2 += sec("feed",++n2,"วิธีกินและพฤติกรรม", (FEED.find(x=>x[0]===e.feed)||[])[1]||"", `
+      <div class="subsec"><h4 class="subh">วิธีกิน</h4>${radioOpts("feed", FEED, e.feed)}</div>
+      <div class="subsec"><h4 class="subh">พฤติกรรม</h4>
+        ${q("การนั่งทาน", radioOpts("sit", OP.SIT, e.sit, true))}
+        ${e.sit && e.sit!=="none" ? `<label class="field"><span>ระยะเวลาที่นั่งทาน (นาที โดยประมาณ) <span class="tiny">ไม่บังคับ</span></span><input id="l-sit" ${numAttr(e.sitMax)} inputmode="numeric" enterkeyhint="done" class="num" value="${esc(e.sitMax)}" placeholder="เช่น 15"></label>` : ""}
+        ${q("การขออาหาร", radioOpts("ask", OP.ASK, e.ask, true))}
+        ${q("การบอกอิ่ม", radioOpts("full", OP.FULL, e.full, true))}
+        ${q("การเดินตามป้อน", radioOpts("followLv", OP.FOLLOW, e.followLv, true))}
+        ${q("การต่อรองให้กิน", radioOpts("bargain", OP.BARGAIN, e.bargain, true))}
+        ${q("การอมและเคี้ยวอาหาร", checkOpts("chew", OP.CHEW, e.chew), "เลือกได้มากกว่า 1 ข้อ")}
+        ${q("การปฏิเสธอาหาร", checkOpts("refuse", OP.REFUSE, e.refuse), "เลือกได้มากกว่า 1 ข้อ")}
+      </div>`, !!e.feed);
+    S2 += sec("env",++n2,"บรรยากาศก่อนและระหว่างมื้อ", "ไม่บังคับ", `
+      <div class="subsec">
+        ${q("สถานที่กิน", radioOpts("place", [...OP.PLACE.slice(0,-1), ["อื่นๆ","อื่นๆ (โปรดระบุ)"]], e.place==="นอกบ้านอื่นๆ"?"อื่นๆ":e.place, true))}
+        ${(e.place==="อื่นๆ"||e.place==="นอกบ้านอื่นๆ") ? `<input class="inp" id="l-place-other" maxlength="60" placeholder="ระบุสถานที่ เช่น สนามเด็กเล่น" aria-label="ระบุสถานที่กิน" value="${esc(e.placeOther||"")}">` : ""}
+        ${q("การกินพร้อมกัน", checkOpts("with", OP.WITH, e.with), "เลือกได้มากกว่า 1 ข้อ")}
+        ${q("การเปิดจอระหว่างมื้อ", radioOpts("screenLv", OP.SCREEN, e.screenLv, true))}
+        ${q("มีของเล่นระหว่างมื้อ", radioOpts("toys", OP.YN, e.toys===true?"yes":e.toys===false?"no":"", true))}
+        ${q("นม/ขนมภายใน 1 ชม. ก่อนมื้อ", radioOpts("snackBefore", OP.YN, e.snackBefore===true?"yes":e.snackBefore===false?"no":"", true))}
+        ${q("ปัจจัยอื่นๆ", checkOpts("factors", OP.FACTORS, e.factors), "เลือกได้มากกว่า 1 ข้อ")}
+      </div>`);
+    if(R.mode!=="photo") S3 += sec("photo",++n3,"รูปก่อน/หลังกิน", "ไม่บังคับ", `<div class="frow frow-col">${photoSlot("before","ก่อนกิน")}${photoSlot("after","หลังกิน")}</div><p class="tiny" id="l-up"></p>`);
+    S3 += sec("note",++n3,"เล่าเพิ่ม", "ไม่บังคับ", `<textarea class="inp" id="l-note" rows="3" placeholder="เช่น เห็นอาหารแล้วเดินหนี ยอมกินเมื่อแม่นั่งกินด้วย">${esc(e.note)}</textarea>`);
+    /* stepper: ขั้น 1 เมนู/เวลา (บังคับ) → ขั้น 2 พฤติกรรม/บรรยากาศ → ขั้น 3 รูป/เล่าเพิ่ม (ไม่บังคับ) */
+    const step = Math.min(3, Math.max(1, R.step||1)), v0 = validateLog();
+    const STEPS = [["เมนูและเวลา","บังคับ"],["พฤติกรรม","ไม่บังคับ"],["รูปและเล่าเพิ่ม","ไม่บังคับ"]];
+    b += `<ol class="stepper" aria-label="ขั้นตอนการบันทึก">${STEPS.map(([lab,tag],i)=>{ const n=i+1, st = n===step?"on":(n<step||(n===1&&v0.ok)?"done":""); return `<li class="${st}"${n===step?' aria-current="step"':""}><button type="button" data-goto="${n}"><span class="sdot">${st==="done"?icon("check"):n}</span><span class="slab">${lab}</span><span class="stag">${tag}</span></button></li>`; }).join("")}</ol>`;
+    b += [S1,S2,S3][step-1];
+    f = `<span class="msg" id="lmsg">${S.canWrite?"":"บัญชีนี้ดูได้อย่างเดียว"}</span>${ex?`<button type="button" class="btn danger" id="l-del">${icon("trash")}ลบ</button>`:""}${step>1?`<button type="button" class="btn" id="l-prev">${icon("chevL")}ย้อนกลับ</button>`:""}${step<3?`<button type="button" class="btn primary" id="l-next"${v0.ok||step>1?"":" disabled"}>ถัดไป${icon("chevR")}</button>`:`<button type="button" class="btn primary" id="l-save" disabled>บันทึก${MEAL[R.k].name}</button>`}`;
   } else {
     const tb = R.tab; const ms=l.milk.reduce((a,x)=>a+(+x.ml||0),0);
     if(tb==="milk") b += sec("milk",1,"นม", hintFor("milk"), `<div id="l-milk" style="display:grid;gap:8px">${l.milk.map((m,ix)=>milkRow(m,ix)).join("")}</div>
-      <p class="tiny" style="margin:0">กรอกเป็น มล. หรือเป็นกล่องก็ได้ ถ้าเลือกกล่อง ให้เลือกขนาดกล่องแล้วใส่จำนวน ระบบจะรวมเป็น มล. ต่อรอบให้ (ครึ่งกล่องใส่ 0.5)</p>
+      <p class="tiny" style="margin:0">เลือกประเภทการกินนม แล้วแตะตัวเลือก หรือกรอกเองก็ได้ ถ้าเป็นออนซ์หรือขวด/กล่อง ระบบจะรวมเป็น มล. ต่อรอบให้ (ครึ่งกล่องใส่ 0.5)</p>
       <div class="chips"><button type="button" class="btn sm" id="l-addmilk">${icon("plus")}เพิ่มรอบนม</button></div>
       <label class="field">น้ำเปล่าทั้งวัน (มล. ประมาณ)<input class="num" id="l-water" ${numAttr(l.water)} inputmode="numeric" value="${esc(l.water)}"></label>`, ms>0);
     if(tb==="snack") b += sec("snack",1,"ของว่างนอกมื้อ", hintFor("snack"), `<div id="l-snacks" style="display:grid;gap:6px">${l.snacks.map((s,ix)=>`<div class="mrow" data-ix="${ix}"><input ${A.TIME_ATTR} class="inp in-st" value="${esc(s.t)}" aria-label="เวลา"><input class="inp in-sn" style="flex:1;min-width:120px" value="${esc(s.n)}" placeholder="อะไร" list="food-list"><input class="inp in-sa2" style="width:130px" value="${esc(s.a)}" placeholder="เท่าไหร่"><button type="button" class="icbtn s-del" aria-label="ลบ">${icon("x")}</button></div>`).join("")}</div>
@@ -442,13 +484,15 @@ function readItems(){
     syncItem(i); });
 }
 function readMeal(){ const e=R.e; readItems(); const v=id=>{ const x=$("#"+id); return x?x.value.trim():undefined; };
-  if($("#l-start")){ e.start=v("l-start"); e.end=v("l-end"); e.sitMax=v("l-sit"); e.follow=$("#l-follow").checked; }
+  if($("#l-start")){ e.start=v("l-start"); e.end=v("l-end"); if($("#l-sit")) e.sitMax=v("l-sit"); }
+  if($("#l-place-other")) e.placeOther=v("l-place-other");
   if($("#l-note")) e.note=v("l-note");
   $$(".in-grp").forEach(x=>e.groups[x.dataset.g]=x.value.trim()); }
 function readDay(){ const l=R.l;
   $$("#l-milk .mrow").forEach(r=>{ const m=l.milk[+r.dataset.ix]; m.t=r.querySelector(".in-mt").value;
-    if(m.u==="box"){ m.box=+r.querySelector(".in-box").value||""; m.n=r.querySelector(".in-mn").value.trim().replace(",","."); m.ml=milkTotal(m); }
-    else { m.u="ml"; m.ml=r.querySelector(".in-ml").value.trim(); delete m.box; delete m.n; } });
+    if(m.u==="box"){ const nn=r.querySelector(".in-mn"); if(nn) m.n=nn.value.trim().replace(",","."); m.ml=milkTotal(m); delete m.oz; }
+    else if(m.u==="oz"){ const oo=r.querySelector(".in-oz"); if(oo) m.oz=oo.value.trim().replace(",","."); m.ml=String(milkTotal(m)||""); delete m.box; delete m.n; }
+    else { m.u="ml"; const mm=r.querySelector(".in-ml"); if(mm) m.ml=mm.value.trim(); delete m.box; delete m.n; delete m.oz; } });
   $$("#l-snacks .mrow").forEach(r=>{ const s=l.snacks[+r.dataset.ix]; s.t=r.querySelector(".in-st").value; s.n=r.querySelector(".in-sn").value.trim(); s.a=r.querySelector(".in-sa2").value.trim(); });
   const v=id=>{ const x=$("#"+id); return x?x.value.trim():""; };
   if($("#l-water")) l.water=v("l-water"); if($("#l-symnote")) l.symNote=v("l-symnote"); $$("#l-sleeps .slrow").forEach(r=>{ const x=l.sleeps[+r.dataset.ix]; if(x){ x.s=r.querySelector(".in-ss").value; x.e=r.querySelector(".in-se").value; } }); if($("#l-w")){ l.weight=v("l-w"); l.height=v("l-h"); } if($("#l-dnote")) l.note=v("l-dnote"); }
@@ -465,8 +509,8 @@ const normTimes = () => $$("#sheet-panel [data-time]").forEach(i=>{ i.value = A.
 async function saveMeal(){
   normTimes(); readMeal(); const e=R.e; e.items=e.items.filter(i=>i.n);
   if(!e.items.length && !e.note){ msg("กรุณาระบุอาหารอย่างน้อย 1 รายการ หรือเล่าเพิ่มเติม"); return; }
-  const nost = e.items.find(i=>!i.st); if(nost){ msg(`กรุณาระบุว่า "${nost.n}" กินหรือไม่กิน (ไม่แน่ใจ เลือก "ไม่ทราบ")`); R.open.eaten=true; redraw(); return; }
-  const noamt = e.items.find(i=>!itemDone(i)); if(noamt){ msg(`กรุณาระบุปริมาณที่กินของ "${noamt.n}" หรือกด "ไม่ทราบปริมาณ"`); R.open.eaten=true; redraw(); return; }
+  const nost = e.items.find(i=>!i.st); if(nost){ msg(`กรุณาระบุว่า "${nost.n}" กินหรือไม่กิน (ไม่แน่ใจ เลือก "ไม่ทราบ")`); R.open.eaten=true; R.step=1; redraw(); return; }
+  const noamt = e.items.find(i=>!itemDone(i)); if(noamt){ msg(`กรุณาระบุปริมาณที่กินของ "${noamt.n}" หรือกด "ไม่ทราบปริมาณ"`); R.open.eaten=true; R.step=1; redraw(); return; }
   // amounts now come from the served/eaten items; old per-group estimates stay only when items carry no amounts
   const hasAmt = e.items.some(i=>(i.st==="ate"||i.st==="part") && (i.frac!=null&&i.frac!=="?" || +i.ea>0 || i.compMode));
   if(hasAmt || !e.trust){ e.trust="items"; e.groups={carb:"",protein:"",veg:"",fruit:""}; }
@@ -640,21 +684,35 @@ panel.addEventListener("click", ev=>{
     const tgt = name==="who" ? (R.tab==="meal"?R.e:R.l) : (["sym","stool"].includes(name)?R.l:R.e);
     if(name==="who") tgt.by=v;
     else if(multi){ const arr=tgt[name]||(tgt[name]=[]); const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else { if(name==="sym"&&v==="ไม่มีอาการ") arr.length=0; else if(name==="sym"){ const j=arr.indexOf("ไม่มีอาการ"); if(j>=0) arr.splice(j,1); } arr.push(v); } }
-    else if(["screen","toys","snackBefore"].includes(name)){ const nv=v==="yes"; tgt[name]=tgt[name]===nv?null:nv; }
+    else if(["screen","toys","snackBefore","vitamin"].includes(name)){ const nv=v==="yes"; tgt[name]=tgt[name]===nv?null:nv; }
     else tgt[name] = tgt[name]===v ? "" : v;
+    if(name==="sit" && tgt.sit==="none") tgt.sitMax=""; /* ไม่นั่งทานเลย: ไม่มีระยะเวลานั่ง */
+    if(name==="screenLv") tgt.screen = tgt.screenLv ? tgt.screenLv!=="off" : null; /* ค่าเดิมที่ใช้เปรียบเทียบมื้อที่เปิดจอ/ไม่เปิด */
+    if(name==="place" && tgt.place!=="อื่นๆ") tgt.placeOther="";
+    if(name==="followLv") tgt.follow = tgt.followLv==="always" || tgt.followLv==="some"; /* ค่าเดิมที่ใช้นับ "มื้อที่ต้องเดินตามป้อน" */
     A.logDirty=true; redraw(); return; }
-  const mu=t.closest(".m-u"); if(mu){ readDay(); const m=R.l.milk[+mu.closest(".mrow").dataset.ix]; if(m.u!==mu.dataset.u){ m.u=mu.dataset.u; if(m.u==="box"){ m.box=m.box||lastBox(); m.n=m.n||"1"; } m.ml=milkTotal(m); } A.logDirty=true; redraw(); return; }
+  const mc=t.closest(".m-chip"); if(mc){ readDay(); const m=R.l.milk[+mc.closest(".mrow").dataset.ix], v=+mc.dataset.v; /* ปุ่มตัวเลือกเร็ว กดซ้ำเพื่อยกเลิก */
+    if(m.u==="box"){ m.box = +m.box===v ? "" : v; m.n=m.n||"1"; } else if(m.u==="oz"){ m.oz = +m.oz===v ? "" : String(v); } else { m.ml = +m.ml===v ? "" : String(v); }
+    m.ml = m.u==="ml" ? m.ml : String(milkTotal(m)||""); A.logDirty=true; redraw(); return; }
+  const mu=t.closest(".m-u"); if(mu){ readDay(); const m=R.l.milk[+mu.closest(".mrow").dataset.ix]; if(m.u!==mu.dataset.u){ m.u=mu.dataset.u; if(m.u==="box"){ m.box=m.box||lastBox(); m.n=m.n||"1"; } else if(m.u==="oz"){ m.oz=m.oz||""; } m.ml=String(milkTotal(m)||""); if(m.u!=="box"){ delete m.box; delete m.n; } if(m.u!=="oz") delete m.oz; } A.logDirty=true; redraw(); return; }
   const ix = el => +el.closest("[data-ix]").dataset.ix;
   const ce=t.closest("[data-eat]"); if(ce){ readItems(); const i=R.e.items[ix(ce)], v=ce.dataset.eat; if(v==="eat"){ if(i.st!=="ate"&&i.st!=="part"){ i.st="part"; i.frac=null; i.ea=""; } } else { i.st=v; i.frac=null; i.ea=""; i.compMode=false; } A.logDirty=true; redraw(); return; }
   const fr=t.closest("[data-frac]"); if(fr){ readItems(); const i=R.e.items[ix(fr)], v=fr.dataset.frac; i.frac = v==="?" ? (i.frac==="?"?null:"?") : +v; if(i.frac==="?") i.ea=""; syncItem(i); A.logDirty=true; redraw(); return; }
   const sz=t.closest("[data-size]"); if(sz){ readItems(); R.e.items[ix(sz)].size = sz.dataset.size==="m" ? null : sz.dataset.size; A.logDirty=true; redraw(); return; }
+  const ne=t.closest("[data-noeat]"); if(ne){ readItems(); const i=R.e.items[ix(ne)], cc=ne.closest("[data-cx]"), tg = cc ? (i.comps||[])[+cc.dataset.cx] : i; if(!tg) return; const v=ne.dataset.noeat; tg.noEat = tg.noEat===v ? "" : v; A.logDirty=true; redraw(); return; }
+  const ifr=t.closest("[data-ifrac]"); if(ifr){ readItems(); const i=R.e.items[ix(ifr)]; if(!i) return; const f=+ifr.dataset.ifrac;
+    i.compMode=false; i.mode=undefined;
+    if(f!==0) delete i.noEat;
+    if(f===0){ i.st="none"; i.frac=null; i.ea=""; } else { i.frac=f; i.st = f>=1 ? "ate" : "part"; i.ea=""; syncItem(i); } /* หมด ¾ ½ ¼: คิดเป็นสัดส่วนของปริมาณที่เสิร์ฟ */
+    A.logDirty=true; redraw(); return; }
   const em=t.closest("[data-emode]"); if(em){ readItems(); const i=R.e.items[ix(em)]; if(!i) return;
+    if(em.dataset.emode!=="none") delete i.noEat;
     if(em.dataset.emode==="all"){ i.mode="all"; i.compMode=false; i.frac=1; i.st="ate"; i.ea=""; syncItem(i); } /* กินหมด: คิดตามสัดส่วนที่เสิร์ฟ */
     else if(em.dataset.emode==="none"){ i.mode="none"; i.compMode=false; i.frac=null; i.ea=""; i.st="none"; } /* ไม่กินเลย: ไม่นำมาคำนวณ */
     else { i.mode="some"; i.compMode=true; i.frac=null; i.ea=""; syncItem(i); } /* กินบางส่วน: ระบุทีละส่วนประกอบ (ค่าที่เลือกไว้เดิมยังอยู่) */
     A.logDirty=true; redraw(); return; }
   const cf=t.closest("[data-cfrac]"); if(cf){ readItems(); const i=R.e.items[ix(cf)], c=i&&(i.comps||[])[+cf.closest("[data-cx]").dataset.cx]; if(!c) return;
-    const f=+cf.dataset.cfrac; c.cf=f; c.st = f===0 ? "none" : "ate"; c.eu=c.su||""; c.ea = f>=1 ? "" : (num(c.sa)!=null ? String(rnd(num(c.sa)*f)) : "");
+    const f=+cf.dataset.cfrac; c.cf=f; if(f!==0) delete c.noEat; c.st = f===0 ? "none" : "ate"; c.eu=c.su||""; c.ea = f>=1 ? "" : (num(c.sa)!=null ? String(rnd(num(c.sa)*f)) : "");
     i.mode="some"; i.compMode=true; i.frac=null; i.ea=""; syncItem(i); A.logDirty=true; redraw(); return; }
   const cEd=t.closest(".c-edit"); if(cEd){ readItems(); const k=ix(cEd), cx=+cEd.closest("[data-cx]").dataset.cx, c=(R.e.items[k].comps||[])[cx]; if(c) openCompModal(k,{n:c.n,g:gOf(c),gt:true,sa:c.sa==null?"":String(c.sa),su:c.su||""},cx); return; }
   if(t.closest(".c-open") || t.closest(".c-add")){ readItems(); openCompModal(ix(t)); return; }
@@ -675,6 +733,9 @@ panel.addEventListener("click", ev=>{
   const sp=t.closest("[data-step]"); if(sp){ const i=panel.querySelector(`.in-grp[data-g="${sp.dataset.step}"]`); i.value=Math.max(0,(parseFloat(i.value)||0)+parseFloat(sp.dataset.d)); readMeal(); if(!R.e.trust) R.e.trust="manual"; A.logDirty=true; redraw(); return; }
   if(t.closest("#l-aibtn")) return aiEstimate();
   if(t.closest("#l-aiphoto")) return aiFromPhotos();
+  const stp=t.closest("[data-goto]"); if(stp){ read(); const to=+stp.dataset.goto, v=validateLog(); if(to>1 && !v.ok){ if(A.toast) A.toast("กรุณาระบุ: "+v.missing.join(" · ")); R.step=1; } else R.step=to; redraw(); const sb=$("#sheet-b"); if(sb) sb.scrollTop=0; return; }
+  if(t.closest("#l-next")){ read(); if(!validateLog().ok) return; R.step=Math.min(3,(R.step||1)+1); redraw(); const sb=$("#sheet-b"); if(sb) sb.scrollTop=0; return; }
+  if(t.closest("#l-prev")){ read(); R.step=Math.max(1,(R.step||1)-1); redraw(); const sb=$("#sheet-b"); if(sb) sb.scrollTop=0; return; }
   const md=t.closest("[data-mode]"); if(md){ read(); R.mode = md.dataset.mode || null; redraw(); return; }
   const gc=t.closest(".gcard"); if(gc && !t.closest("input,button")){ read(); R.e.trust = R.e.trust===gc.dataset.trust?"":gc.dataset.trust; A.logDirty=true; redraw(); return; }
   const px=t.closest(".pt button"); if(px){ readMeal(); R.e.photos[px.dataset.pk].splice(+px.dataset.pix,1); A.logDirty=true; redraw(); return; }
@@ -717,7 +778,8 @@ panel.addEventListener("input", ev=>{ if(ev.target.id==="fp-q"){ renderFoodPicke
   const r=ev.target.closest&&ev.target.closest("#l-milk .mrow"); if(!r) return;
   readDay(); const m=R.l.milk[+r.dataset.ix];
   if(m.box) try{ localStorage.setItem("imdee:box", m.box); }catch(_){}
-  const tb=r.querySelector(".m-tot"); if(tb) tb.innerHTML = m.ml?`= ${m.ml} มล.`:'<span class="tiny" style="color:var(--warn)">เลือกขนาดกล่อง</span>';
+  const tb=r.querySelector(".m-tot"); if(tb) tb.innerHTML = m.ml ? (m.u==="oz" ? `≈ ${m.ml} มล.` : `= ${m.ml} มล.`) : (m.u==="box" ? '<span class="tiny" style="color:var(--warn)">เลือกขนาด</span>' : "");
+  r.querySelectorAll(".m-chip").forEach(c=>c.setAttribute("aria-pressed", String(+c.dataset.v === +(m.u==="oz" ? m.oz : m.u==="box" ? m.box : m.ml))));
   const ms=R.l.milk.reduce((a,x)=>a+(+x.ml||0),0), h=$('details[data-sec="milk"] .hint'); if(h){ h.textContent = ms?`รวม ${ms} มล.`:""; h.classList.toggle("ok", ms>0); }
 });
 { const pn=$("#sheet-panel"); if(pn) new MutationObserver(fitWho).observe(pn,{childList:true}); window.addEventListener("resize", fitWho); if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitWho); }

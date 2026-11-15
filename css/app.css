@@ -822,3 +822,46 @@ input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .nutbox li.mute span:last-child{color:var(--ink-3)}
 .nutbox>p{margin:0;padding:2px 12px 10px}
 .new-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:.7rem;font-weight:600;vertical-align:middle}
+/* วิธีกินและพฤติกรรม: แบ่งเป็น 2 ส่วน + กลุ่มคำถาม */
+.subsec{display:grid;gap:10px}
+.subsec+.subsec{border-top:1px dashed var(--line);padding-top:14px;margin-top:8px}
+.subh{margin:0;font-size:.98rem}
+.qgroup{display:grid;gap:2px}
+.qgroup .ql{font-size:.84rem;color:var(--ink-2);font-weight:600;margin-top:4px}
+.qgroup .ql .tiny{font-weight:400}
+.opts.radio.dense .opt{min-height:38px;padding-top:6px;padding-bottom:6px}
+/* checkbox list (เลือกได้หลายข้อ) */
+.opts.radio.check .opt::before{border-radius:6px}
+.opts.radio.check .opt[aria-checked="true"]::before{border-color:var(--accent);background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/80% no-repeat}
+/* stepper บันทึกมื้ออาหาร (3 ขั้น) */
+.stepper{list-style:none;margin:12px 0 4px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;position:sticky;top:-16px;z-index:3;background:var(--bg-2);padding-top:4px}
+.stepper li{position:relative}
+.stepper li+li::before{content:"";position:absolute;top:19px;left:calc(-50% + 22px);right:calc(50% + 22px);border-top:2px solid var(--line-2)}
+.stepper li.done+li::before,.stepper li.on::before{border-top-color:var(--accent)}
+.stepper button{width:100%;display:grid;justify-items:center;gap:2px;border:0;background:transparent;cursor:pointer;padding:0 2px 4px;color:var(--ink-3);font:inherit}
+.stepper .sdot{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line-2);background:var(--surface);font-weight:600;font-size:.9rem;color:var(--ink-3)}
+.stepper .sdot .ic{width:16px;height:16px;stroke-width:3}
+.stepper .slab{font-size:.78rem;font-weight:600;color:var(--ink-2);text-align:center;line-height:1.2}
+.stepper .stag{font-size:.68rem;color:var(--ink-3)}
+.stepper li.on .sdot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.stepper li.on .slab{color:var(--ink)}
+.stepper li.done .sdot{border-color:var(--good);color:var(--good)}
+.stepper li:first-child .stag{color:var(--bad)}
+/* รอบนม: เวลาอยู่บน ประเภทการกินนมอยู่ล่าง + ตัวเลือกเร็ว */
+.mrow.milk2{display:grid;gap:12px;align-items:stretch;padding:12px 48px 12px 12px}
+.milk2 .m-cap{display:block;font-size:.78rem;color:var(--ink-3);margin-bottom:4px}
+.milk2 .m-time input{width:120px}
+.milk2 .m-type .stseg{display:flex;width:100%}
+.milk2 .m-type .stseg button{flex:1 1 0;min-width:0;text-align:center;padding:5px 6px}
+.milk2 .m-type .stseg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.milk2 .m-chips{display:flex;flex-wrap:wrap;gap:6px}
+.milk2 .m-chip{border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);border-radius:999px;min-width:48px;min-height:36px;padding:4px 12px;cursor:pointer;font-size:.9rem}
+.milk2 .m-chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.milk2 .m-custom{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.milk2 .m-custom .inp{width:110px}
+.milk2 .m-tot{margin-left:auto;font-size:.86rem}
+.milk2 .m-del{top:10px;right:10px}
+/* ไม่กิน: ระบุลักษณะที่เกิดขึ้น (ไม่บังคับ) */
+.noeat{display:grid;gap:4px;padding-top:2px}
+.noeat .m-cap{display:block;font-size:.78rem;color:var(--ink-3)}
+.noeat .fracs{gap:6px}

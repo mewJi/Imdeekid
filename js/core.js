@@ -99,6 +99,24 @@ const ST = {
 const CATS = ["ข้าว-แป้ง","ไข่","เนื้อสัตว์-ปลา","ผัก","ผลไม้","นม-โยเกิร์ต","ขนม-เบเกอรี่","น้ำมัน-ไขมัน","ซุป-เมนูรวม","เครื่องดื่ม-น้ำปั่น"];
 const UNITS = ["คำ","ช้อน","ทัพพี","ชิ้น","ฟอง","ลูก","ส่วน","ห่อ","ถ้วย","กำมือ","แผ่น","มล.","ช้อนชา","กรัม"];
 const FEED = [["self","กินเองทั้งหมด"],["mostself","กินเองส่วนใหญ่"],["mixed","กินเองและป้อนพอๆ กัน"],["mostfed","ป้อนส่วนใหญ่"],["fed","ป้อนทั้งหมด"]];
+/* ตัวเลือกพฤติกรรมขณะกิน (เลือกได้ข้อเดียว: [ค่า, ป้าย]) และแบบเลือกได้หลายข้อ (ค่า = ป้าย) */
+const OPT = {
+  SIT:[["full","นั่งทานจนหมด"],["left","นั่งทานแล้วลุกเดินออกไป"],["mixed","นั่งบ้างลุกเดินบ้าง"],["none","ไม่นั่งทานเลย"]],
+  ASK:[["more","ขอเพิ่ม"],["none","ไม่ขอเพิ่ม"]],
+  FULL:[["full","บอกว่าอิ่ม"],["notfull","บอกว่าไม่อิ่ม"],["silent","ไม่บอกอะไร"]],
+  FOLLOW:[["always","เดินตามป้อนตลอด"],["some","เดินตามป้อนบ้าง"],["never","ไม่เดินตามป้อน"]],
+  BARGAIN:[["always","มีการต่อรองตลอด"],["some","มีการต่อรองบ้าง"],["none","ไม่มีการต่อรอง"]],
+  CHEW:["อม/ไม่เคี้ยว","คายทิ้ง"],
+  REFUSE:["หันหน้าหนี","เอามือปัด/ผลักอาหาร","ร้องไห้"],
+  /* บรรยากาศก่อนและระหว่างมื้อ */
+  PLACE:["บ้าน","บ้านญาติ","ร้านอาหาร","อื่นๆ"],
+  WITH:["แม่","พ่อ","พ่อและแม่","พร้อมผู้ใหญ่","เด็กคนอื่น"],
+  SCREEN:[["always","เปิดและดูตลอด"],["some","เปิดอยู่แต่ดูบ้าง"],["idle","เปิดอยู่แต่ไม่ดู"],["off","ไม่เปิด"]],
+  YN:[["yes","มี"],["no","ไม่มี"]],
+  FACTORS:["ง่วง/เพิ่งตื่น","ไม่สบาย","เล่นมาเหนื่อยๆ"]};
+/* รวมคำตอบพฤติกรรมทั้งหมดของมื้อเป็นรายการข้อความ (ใช้แสดงในรายวันและนับในหน้าวิเคราะห์) — ข้อมูลเก่าที่เป็น behav แบบรายการยังรวมด้วย */
+const behavList = e => { const L = (k,list) => (list.find(x=>x[0]===e[k])||[])[1];
+  return [...(e.behav||[]), L("sit",OPT.SIT), L("ask",OPT.ASK), L("full",OPT.FULL), L("followLv",OPT.FOLLOW), L("bargain",OPT.BARGAIN), ...(e.chew||[]), ...(e.refuse||[])].filter(Boolean); };
 const BEHAV = ["นั่งกินจนจบ","ขอกินเอง","ขอเพิ่ม","ลุกจากเก้าอี้","เดินวนรอบโต๊ะ","ไปเล่นที่อื่น","ต้องเดินตามป้อน","ปัด/ผลักอาหาร","อมข้าวไม่เคี้ยว","คายอาหาร","ร้องไห้/งอแง","ต่อรองให้กิน"];
 const MOOD = ["หิว","ปกติ","ไม่ค่อยหิว","ง่วง/เพิ่งตื่น","ไม่สบาย"];
 const SYM = ["ไอหรือสำลักระหว่างกิน","อาเจียน","ปวดท้อง/งอแงหลังกิน","ท้องผูก","ท้องเสีย","ผื่นหรือสงสัยแพ้อาหาร","ไข้/ไม่สบาย","ไม่มีอาการ"];
@@ -129,7 +147,7 @@ const PERIODS = [
   {k:"night", name:"กลางคืน", from:1200, to:1800, v:"--p-night"},
 ];
 const periodOf = m => { const x = m < 360 ? m+1440 : m; return PERIODS.find(p => x >= p.from && x < p.to) || PERIODS[3]; };
-Object.assign(App, {MEALS,MEAL,GROUPS,STATES,ST,CATS,UNITS,FEED,BEHAV,MOOD,SYM,STOOL,PLACES,DEFAULT_MEMBERS,DEFAULT_SCHED,PERIODS,periodOf});
+Object.assign(App, {MEALS,MEAL,GROUPS,STATES,ST,CATS,UNITS,FEED,OPT,behavList,BEHAV,MOOD,SYM,STOOL,PLACES,DEFAULT_MEMBERS,DEFAULT_SCHED,PERIODS,periodOf});
 
 /* ---------------- store ---------------- */
 const LS = {
@@ -269,16 +287,18 @@ function entryToMeal(e, b){
   const EQ = {"คำ>ทัพพี":.12,"ช้อน>ทัพพี":.25,"คำ>ถ้วย":.08,"ช้อน>ถ้วย":.17,"คำ>ช้อน":.5,"คำ>ส่วน":.15,"ชิ้น>ส่วน":.15};
   const fracOf = i => { if(i.frac!=null && i.frac!=="?") return +i.frac; const a=num(i.ea), sv=num(i.sa); if(a==null || !sv) return null;
     const x = i.eu===i.su ? a : EQ[i.eu+">"+i.su]!=null ? a*EQ[i.eu+">"+i.su] : null; return x==null ? null : Math.min(1.5, x/sv); };
+  /* ไม่กิน + ลักษณะ "คาย" นับเป็นสถานะ คาย (ใช้ในสรุป/วิเคราะห์) ส่วนที่เหลือ (เช่น อ้วก) นับเป็น ไม่กิน */
+  const spitSt = (st, ne) => st==="none" && /คาย/.test(ne||"") ? "spit" : st;
   const partsOf = i => (i.comps||[]).filter(c=>c.n).map(c=>{
     const out = {n:c.n, g:c.g||App.guessCat(c.n), served: fmtAmt(c.sa,c.su), size:i.size||null};
-    if(["none","spit","unk"].includes(i.st)||!i.st) return {...out, st:i.st||"unk", eaten:""};
-    if(i.compMode){ const st=c.st||"unk"; return {...out, st, eaten: st==="ate" ? (fmtAmt(c.ea,c.eu||c.su) || "หมด") : ""}; }
+    if(["none","spit","unk"].includes(i.st)||!i.st) return {...out, st:spitSt(i.st||"unk", i.noEat), eaten:""};
+    if(i.compMode){ const st=spitSt(c.st||"unk", c.noEat); return {...out, st, eaten: st==="ate" ? (fmtAmt(c.ea,c.eu||c.su) || "หมด") : ""}; }
     const fr = fracOf(i);
     return {...out, st: fr!=null ? (fr>=1?"ate":"part") : "unk", eaten: fr!=null && num(c.sa)!=null ? fmtAmt(rnd(num(c.sa)*fr), c.su) : ""};
   });
-  const items = (e.items||[]).filter(i=>i.n).map(i=>({n:i.n, g:i.g||App.guessCat(i.n), st:i.st||"unk", size:i.size||null, parts: (i.comps||[]).some(c=>c.n) && (i.compMode || !["ate","part"].includes(i.st) || fracOf(i)!=null) ? partsOf(i) : null,
+  const items = (e.items||[]).filter(i=>i.n).map(i=>({n:i.n, g:i.g||App.guessCat(i.n), st:spitSt(i.st||"unk", i.noEat), size:i.size||null, parts: (i.comps||[]).some(c=>c.n) && (i.compMode || !["ate","part"].includes(i.st) || fracOf(i)!=null) ? partsOf(i) : null,
     served: fmtAmt(i.sa,i.su) || "ไม่ระบุ",
-    eaten: [i.st==="none"?"ไม่กิน":i.st==="spit"?"เคี้ยวแล้วคาย":i.st==="unk"?"ไม่ทราบ":"", fmtAmt(i.ea,i.eu) || (i.st==="ate"?"หมด":i.st==="part"?"บางส่วน":"")].filter(Boolean).join(" · ") }));
+    eaten: [i.st==="none"?("ไม่กิน"+(i.noEat?` (${i.noEat})`:"")):i.st==="spit"?"เคี้ยวแล้วคาย":i.st==="unk"?"ไม่ทราบ":"", fmtAmt(i.ea,i.eu) || (i.st==="ate"?"หมด":i.st==="part"?"บางส่วน":"")].filter(Boolean).join(" · ") }));
   const dur = e.start&&e.end ? ((toMin(e.end)-toMin(e.start)+1440)%1440) : null;
   const feed = (FEED.find(f=>f[0]===e.feed)||[])[1];
   const man = e.groups && Object.values(e.groups).some(v=>v!=null&&v!=="");
@@ -286,17 +306,20 @@ function entryToMeal(e, b){
   const eaten = useAi ? {...e.ai.eaten} : man ? {carb:+e.groups.carb||0, protein:+e.groups.protein||0, veg:+e.groups.veg||0, fruit:+e.groups.fruit||0, fat:null} : null;
   const ph = k => (e.photos&&e.photos[k]||[]).map(p=>App.photoUrl(p));
   const env = [];
+  if(e.vitamin===true) env.push("วิตามิน/อาหารเสริม: มี"); else if(e.vitamin===false) env.push("วิตามิน/อาหารเสริม: ไม่มี");
   if(e.mood) env.push("ก่อนกิน "+e.mood);
-  if(e.screen===true) env.push("มีจอ/ทีวีเปิด"); else if(e.screen===false) env.push("ไม่มีจอ");
-  if(e.toys===true) env.push("มีของเล่นที่โต๊ะ");
+  const scrLab = (OPT.SCREEN.find(x=>x[0]===e.screenLv)||[])[1];
+  if(scrLab) env.push("จอ: "+scrLab); else if(e.screen===true) env.push("มีจอ/ทีวีเปิด"); else if(e.screen===false) env.push("ไม่มีจอ");
+  if(e.toys===true) env.push("มีของเล่นระหว่างมื้อ");
   if(e.snackBefore===true) env.push("กินนม/ขนมก่อนมื้อไม่ถึง 1 ชม.");
   if(e.with&&e.with.length) env.push("กินกับ "+e.with.join(", "));
-  if(e.place) env.push("ที่"+e.place);
+  if(e.place) env.push("ที่"+((e.place==="อื่นๆ"||e.place==="นอกบ้านอื่นๆ") ? (e.placeOther||"อื่นๆ") : e.place));
+  if(e.factors&&e.factors.length) env.push("ปัจจัยอื่น: "+e.factors.join(", "));
   return {...b, none:false, entry:e, logged:true, items,
     time: e.start ? `${e.start}${e.end?"–"+e.end:""}` : null, durMin: dur,
-    feedText: [feed, e.follow?"ต้องเดินตามป้อน":""].filter(Boolean).join(" · ") || null,
+    feedText: [feed, (!e.followLv && e.follow)?"ต้องเดินตามป้อน":""].filter(Boolean).join(" · ") || null,
     feedKey: e.feed || null, follow: !!e.follow,
-    behav: e.behav||[], sitMax: e.sitMax? +e.sitMax : null, env, note: e.note||"",
+    behav: behavList(e), sitMax: e.sitMax? +e.sitMax : null, env, note: e.note||"",
     photos: {before: ph("before").length?ph("before"):(b.photos&&b.photos.before)||[], after: ph("after").length?ph("after"):(b.photos&&b.photos.after)||[]},
     eaten: eaten || b.eaten || null,
     estimateNote: useAi ? `ประเมินโดย AI${e.ai.confidence?` · ความมั่นใจ${({low:"ต่ำ",medium:"ปานกลาง",high:"สูง"})[e.ai.confidence]||""}`:""}${e.ai.note?" · "+e.ai.note:""}` : man ? `${e.by||"ผู้ป้อน"}ประเมินเอง` : b.estimateNote,
