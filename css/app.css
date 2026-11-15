@@ -558,6 +558,13 @@ td.off{opacity:.4;color:var(--ink-3)}
 .whomodal h3{font-size:1.05rem;margin:0}
 .whomodal .wm-act{display:flex;gap:8px;justify-content:flex-end}
 .opt[hidden]{display:none}
+/* ตัวเลือกเดี่ยวแบบ radio list */
+.opts.radio{display:grid;gap:0}
+.opts.radio .opt{display:flex;align-items:center;gap:12px;border:0;background:transparent;border-radius:10px;padding:9px 4px;min-height:42px;color:var(--ink);text-align:left;font-size:.95rem}
+.opts.radio .opt::before{content:"";width:20px;height:20px;flex:none;border-radius:50%;border:2px solid var(--line-2);background:var(--surface);box-sizing:border-box}
+.opts.radio .opt[aria-checked="true"]::before{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 5px,var(--surface) 6px)}
+.opts.radio .opt[aria-checked="true"]{font-weight:600}
+.opts.radio .opt:hover{background:var(--surface-2)}
 .opt.opt-more{border-style:dashed;color:var(--accent-ink)}
 
 /* เลือกมื้อ: การ์ด 3 ช่องเต็มความกว้าง พร้อมไอคอน */
@@ -790,3 +797,28 @@ input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .dot-st .ic{width:68%;height:68%;stroke-width:3}
 .dot.done{border-style:solid;border-color:color-mix(in srgb,var(--good) 55%,transparent);background:color-mix(in srgb,var(--good) 10%,var(--surface-2));color:var(--good)}
 .dot.done .dot-st{background:var(--good)}
+/* เมนูที่ทาน (เมนูที่มีส่วนประกอบ): โหมดกินหมด/กินบางอย่าง + เศษส่วนต่อส่วนประกอบ + กล่องสารอาหาร */
+.modeseg{flex-wrap:nowrap}
+.modeseg button{flex:1 1 0;min-width:0;text-align:center}
+.modeseg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.ecomps{display:grid;gap:8px}
+.ecomp2{display:grid;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.ecomp2 .cp-main{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ecomp2 .cp-n{font-weight:600;font-size:.9rem}
+.fracs.cf{gap:6px}
+.fracs.cf button{flex:1 1 auto;min-width:44px;text-align:center;padding:5px 8px}
+.nutbox{border:1.5px dashed var(--line-2);border-radius:10px;padding:0;background:transparent}
+.nutbox>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;row-gap:2px;padding:9px 12px;font-size:.84rem;color:var(--ink-2)}
+.nutbox>summary::-webkit-details-marker{display:none}
+.nutbox>summary span{white-space:nowrap}
+.nutbox>summary::after{content:"";grid-column:2;grid-row:1;width:8px;height:8px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(45deg);margin:-3px 4px 0 0;transition:transform .15s}
+.nutbox[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+.nutbox>summary b{grid-column:1/-1;font-weight:600;color:var(--ink);font-size:.84rem}
+.nutbox ul{list-style:none;margin:0;padding:0 12px 4px;display:grid;gap:6px}
+.nutbox li{display:grid;gap:1px;font-size:.82rem;padding-top:6px;border-top:1px dashed var(--line)}
+.nutbox li>span:first-child{font-weight:600;color:var(--ink)}
+.nutbox li>span:last-child{color:var(--ink-2)}
+.nutbox li.mute{color:var(--ink-3)}
+.nutbox li.mute span:last-child{color:var(--ink-3)}
+.nutbox>p{margin:0;padding:2px 12px 10px}
+.new-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:.7rem;font-weight:600;vertical-align:middle}
