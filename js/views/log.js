@@ -92,7 +92,7 @@ async function delWho(name){
   A.emit("settings"); redraw(); openWhoPicker();
 }
 function closeWhoModal(){ $$("#sheet .whomodal").forEach(m=>m.remove()); }
-/* modal เพิ่มอาหารที่เสิร์ฟ: ชื่อ หมวด จำนวน หน่วย + ส่วนประกอบ (กรอกใน modal แล้วกด "เพิ่มรายการ") */
+/* modal เพิ่มเมนูที่เสิร์ฟ: ชื่อ หมวด จำนวน หน่วย + ส่วนประกอบ (กรอกใน modal แล้วกด "เพิ่มรายการ") */
 /* modal เพิ่มอาหาร: หน่วยเปลี่ยนตามหมวด (ถ้าผู้ใช้เลือกหน่วยเองแล้วและยังอยู่ในหมวดใหม่ ให้คงไว้) */
 function syncUnitSel(g, u){ if(!g||!u) return; const cur=u.value, keep=(u.dataset.touched && A.unitsFor(g.value).some(([v])=>v===cur)) ? cur : A.defaultUnit(g.value); u.innerHTML=unitOpts(g.value, keep); }
 const imSyncUnits = () => syncUnitSel($("#im-g"), $("#im-su"));
@@ -100,7 +100,7 @@ function openItemModal(pre, eix){
   const edit = eix!=null && !!R.e.items[eix]; /* eix = ลำดับรายการที่กำลังแก้ (ไม่ใส่ = เพิ่มใหม่) */
   closeWhoModal();
   const m=document.createElement("div"); m.id="item-modal"; m.className="whomodal top"; if(edit) m.dataset.ix=String(eix); m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
-  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide"><h3 id="wm-title">${edit?"แก้ไขอาหารที่เสิร์ฟ":"เพิ่มอาหารที่เสิร์ฟ"}</h3>
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide"><h3 id="wm-title">${edit?"แก้ไขเมนูที่เสิร์ฟ":"เพิ่มเมนูที่เสิร์ฟ"}</h3>
     <label class="field"><span>ชื่ออาหารหรือเมนู${STAR}</span><input class="inp" id="im-n" list="food-list" placeholder="เช่น ข้าวสวย ไข่ต้ม สปาเก็ตตี้" autocomplete="off" enterkeyhint="done"><p class="tiny field-err" id="im-err" role="alert" hidden>กรุณาระบุชื่ออาหารหรือเมนู</p></label>
     <label class="field"><span>หมวด${STAR}</span>${catSel("", "", "").replace('class="inp "','class="inp" id="im-g"')}</label>
     <div class="field">ปริมาณที่เสิร์ฟ<div class="im-grid2"><input class="inp num" id="im-sa" type="number" step="any" min="0" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="จำนวน" aria-label="จำนวนที่เสิร์ฟ">${unitSel("", "", "").replace('class="inp "','class="inp" id="im-su"')}</div></div>
@@ -118,10 +118,12 @@ let compCtx=null; /* เก็บฟอร์มส่วนประกอบ�
 let compAdded=[]; /* ชื่อส่วนประกอบที่เพิ่มไปแล้วในรอบนี้ (เพิ่มได้หลายรายการต่อเนื่อง) */
 /* รายการที่เพิ่มไปแล้วในรอบนี้: แสดงเป็นการ์ดด้านล่างฟอร์ม ลบได้อย่างเดียว (ถ้าจะแก้ ให้ลบแล้วเพิ่มใหม่) */
 const refreshAdded = () => { const p=$("#cm-added"); if(!p) return; p.hidden=!compAdded.length;
-  p.innerHTML = compAdded.length ? `<div class="cm-list-h"><b>รายการส่วนประกอบที่เพิ่ม</b><span>${compAdded.length} รายการ</span></div>`+compAdded.map((c,i)=>`<div class="cm-card" data-i="${i}"><div class="cp-main"><b class="cp-n">${esc(c.n)}</b><span class="tiny">${esc([gOf(c), fmtAmt(c.sa,c.su)].filter(Boolean).join(" · "))}</span></div><button type="button" class="icbtn cm-del" aria-label="ลบ ${esc(c.n)}">${icon("trash")}</button></div>`).join("") : "";
-  const cl=document.querySelector("#comp-modal .wm-act [data-wm-close]"); if(cl) cl.textContent = compAdded.length ? "ปิด" : "ยกเลิก"; };
-function delAddedComp(i){ const c=compAdded[i], m=$("#comp-modal"); if(!c||!m) return; readItems(); const it=R.e.items[+m.dataset.ix];
-  if(it&&it.comps){ const x=it.comps.indexOf(c); if(x>=0) it.comps.splice(x,1); } compAdded.splice(i,1); A.logDirty=true; redraw(); refreshAdded(); }
+  p.innerHTML = compAdded.length ? `<div class="cm-list-h"><div class="cm-list-t"><b>รายการส่วนประกอบ</b><span>${compAdded.length} รายการ</span></div><button type="button" class="btn sm" id="cm-next" hidden>${icon("plus")}เพิ่มรายการ</button></div>`+compAdded.map((c,i)=>`<div class="cm-card" data-i="${i}"><div class="cp-main"><b class="cp-n">${esc(c.n)}</b><span class="tiny">${esc([gOf(c), fmtAmt(c.sa,c.su)].filter(Boolean).join(" · "))}</span></div><button type="button" class="icbtn cm-del" aria-label="ลบ ${esc(c.n)}">${icon("trash")}</button></div>`).join("") : ""; };
+/* กรอบกรอกส่วนประกอบใหม่: แสดงตอนเริ่ม/ตอนกด "เพิ่มรายการถัดไป" ส่วนหลังเพิ่มแต่ละรายการจะซ่อน เหลือแต่การ์ดรายการด้านบน */
+const setCompForm = open => { const f=$("#cm-form"), nx=$("#cm-next"); if(f) f.hidden=!open; if(nx) nx.hidden = open || !compAdded.length; };
+/* รายการที่เพิ่มในป๊อปอัปเป็นแค่ "ร่าง" จนกว่าจะกดยืนยัน (ยกเลิก = ทิ้งทั้งหมด) */
+function delAddedComp(i){ if(!compAdded[i]) return; compAdded.splice(i,1); refreshAdded(); const f=$("#cm-form"); setCompForm(!compAdded.length || !(f&&f.hidden)); }
+function commitAdded(k){ readItems(); const it=R.e.items[k]; if(it && compAdded.length){ it.showComps=true; it.comps=(it.comps||[]).concat(compAdded); A.logDirty=true; } compAdded=[]; closeWhoModal(); redraw(); }
 function openCompModal(k, d, cx){
   const it=R.e.items[k]; if(!it) return;
   const edit = cx!=null; /* cx = ลำดับส่วนประกอบที่กำลังแก้ (ไม่ใส่ = เพิ่มใหม่) */
@@ -130,15 +132,17 @@ function openCompModal(k, d, cx){
   const m=document.createElement("div"); m.id="comp-modal"; m.className="whomodal top"; m.dataset.ix=String(k); if(edit) m.dataset.cx=String(cx); m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
   m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide cm-wrap"><div class="cm-head"><h3 id="wm-title">${edit?"แก้ไขส่วนประกอบ":"เพิ่มส่วนประกอบ"}</h3><div class="parent-note">${icon("bowl")}<span><b>${esc(it.n||"ยังไม่ใส่ชื่อ")}</b></span></div></div>
     <div class="cm-body">
+    <div class="cm-list" id="cm-added" hidden></div>
+    <div class="cm-form" id="cm-form">
     <div class="field"><span>ชื่อส่วนประกอบ${STAR}</span><input type="hidden" id="cm-n"><button type="button" class="inp pickfield pf-empty" id="cm-pick" aria-haspopup="dialog"><span class="combo-ic">${icon("search")}</span><span class="pf-t" id="cm-pick-t">เลือกหรือค้นหาส่วนประกอบ</span></button><p class="tiny field-err" id="cm-err" role="alert" hidden>กรุณาระบุชื่อส่วนประกอบ</p></div>
     <div class="cm-row"><label class="field"><span>หมวด${STAR}</span>${catSel("", "", "").replace('class="inp "','class="inp" id="cm-g"')}</label>
       <div class="field"><span>ปริมาณที่เสิร์ฟ${STAR}</span><div class="cm-qty"><input class="inp num" id="cm-sa" type="number" step="any" min="0" inputmode="decimal" enterkeyhint="done" placeholder="จำนวน" autocomplete="off" aria-label="จำนวนส่วนประกอบ">${unitSel("", "", "", "").replace('class="inp "','class="inp" id="cm-su"')}</div></div></div>
     <p class="tiny field-err" id="cm-qerr" role="alert" hidden>กรุณาระบุปริมาณที่เสิร์ฟ</p>
-    ${edit?"":`<button type="button" class="btn" id="cm-more">${icon("plus")}เพิ่มแล้วกรอกรายการต่อไป</button>`}
-    <div class="cm-list" id="cm-added" hidden></div>
+    ${edit?"":`<button type="button" class="btn" id="cm-more">${icon("plus")}เพิ่มรายการ</button>`}
     </div>
-    <div class="wm-act"><button type="button" class="btn" data-wm-close>ยกเลิก</button><button type="button" class="btn primary" id="cm-ok">${edit?"บันทึก":"เพิ่มส่วนประกอบ"}</button></div></div>`;
-  $("#sheet").appendChild(m); cmSyncUnits(); refreshAdded();
+    </div>
+    <div class="wm-act"><button type="button" class="btn" data-wm-close>ยกเลิก</button><button type="button" class="btn primary" id="cm-ok">ยืนยัน</button></div></div>`;
+  $("#sheet").appendChild(m); cmSyncUnits(); refreshAdded(); setCompForm(true);
   if(d){ if(d.n){ $("#cm-n").value=d.n; const pk=$("#cm-pick"); pk.classList.remove("pf-empty"); $("#cm-pick-t").textContent=d.n; }
     const g=$("#cm-g"); if(d.gt){ g.value=d.g; g.dataset.touched="1"; } else if(d.n){ g.value=A.guessCat(d.n); } cmSyncUnits();
     if(d.sa) $("#cm-sa").value=d.sa; const su=$("#cm-su");
@@ -148,7 +152,8 @@ function openCompModal(k, d, cx){
 function pickComp(){ const m=$("#comp-modal"); if(!m) return; compCtx={k:+m.dataset.ix, cx:m.dataset.cx!=null?+m.dataset.cx:null, d:{n:$("#cm-n").value, g:$("#cm-g").value, gt:!!$("#cm-g").dataset.touched, sa:$("#cm-sa").value, su:$("#cm-su").value}}; openFoodPicker({comp:true}); }
 function submitComp(more){
   const m=$("#comp-modal"); if(!m) return; const k=+m.dataset.ix, n=($("#cm-n")||{}).value.trim();
-  if(!n && !more && compAdded.length && m.dataset.cx==null){ closeWhoModal(); redraw(); return; } /* เพิ่มต่อเนื่องไปแล้ว และไม่ได้กรอกรายการใหม่ → ปิดได้เลย */
+  const isEdit = m.dataset.cx!=null;
+  if(!n && !more && compAdded.length && !isEdit){ commitAdded(k); return; } /* มีรายการร่างอยู่ และไม่ได้กรอกรายการใหม่ → ยืนยันรายการร่างทั้งหมด */
   /* ชื่อ และ ปริมาณ(จำนวน+หน่วย) ต้องกรอก: ข้อความเตือนแสดงใต้ช่องนั้นๆ */
   const saV=$("#cm-sa").value.trim(), suV=$("#cm-su").value, badQ = !(parseFloat(saV)>0) || !suV;
   const eN=$("#cm-err"), eQ=$("#cm-qerr"), pk0=$("#cm-pick"), sa0=$("#cm-sa"), su0=$("#cm-su");
@@ -157,15 +162,15 @@ function submitComp(more){
   if(!suV) su0.setAttribute("aria-invalid","true"); else su0.removeAttribute("aria-invalid");
   if(!n){ pk0.focus(); return; } if(badQ){ (!(parseFloat(saV)>0)?sa0:su0).focus(); return; }
   readItems(); const it=R.e.items[k]; if(!it){ closeWhoModal(); return; }
-  const c={n, g:$("#cm-g").value, sa:$("#cm-sa").value.trim(), su:$("#cm-su").value}; it.showComps=true; if(!it.comps) it.comps=[];
-  if(m.dataset.cx!=null && it.comps[+m.dataset.cx]) Object.assign(it.comps[+m.dataset.cx], c); else it.comps.push(c);
-  A.logDirty=true;
-  if(more && m.dataset.cx==null){ /* เพิ่มแล้วกรอกรายการต่อไป: เก็บรายการนี้ไว้ ล้างฟอร์มให้กรอกชื่อใหม่ (การ์ดด้านหลังอัปเดตทันที) */
-    compAdded.push(c); redraw();
+  const c={n, g:$("#cm-g").value, sa:$("#cm-sa").value.trim(), su:$("#cm-su").value};
+  if(isEdit){ /* แก้ไขส่วนประกอบเดิม: ใช้ทันทีเมื่อกดยืนยัน */
+    if(it.comps && it.comps[+m.dataset.cx]) Object.assign(it.comps[+m.dataset.cx], c); it.showComps=true; A.logDirty=true; closeWhoModal(); redraw(); return; }
+  compAdded.push(c); /* เพิ่มเป็นรายการร่าง ยังไม่ถือว่าเพิ่มจริงจนกว่าจะกดยืนยัน */
+  if(!more){ commitAdded(k); return; }
+  { /* เพิ่มรายการ: เก็บเป็นร่าง ล้างฟอร์ม ซ่อนกรอบกรอก แสดงการ์ดรายการด้านบน */
     $("#cm-n").value=""; const pk=$("#cm-pick"); pk.classList.add("pf-empty"); pk.removeAttribute("aria-invalid"); $("#cm-pick-t").textContent="เลือกหรือค้นหาส่วนประกอบ";
-    const e=$("#cm-err"); if(e) e.hidden=true; const eq=$("#cm-qerr"); if(eq) eq.hidden=true; $("#cm-sa").removeAttribute("aria-invalid"); $("#cm-su").removeAttribute("aria-invalid"); const g=$("#cm-g"); g.selectedIndex=0; delete g.dataset.touched; const su=$("#cm-su"); delete su.dataset.touched; cmSyncUnits(); $("#cm-sa").value=""; refreshAdded();
-    const body=m.querySelector(".cm-body"); if(body) body.scrollTop=0; return; }
-  closeWhoModal(); redraw();
+    const e=$("#cm-err"); if(e) e.hidden=true; const eq=$("#cm-qerr"); if(eq) eq.hidden=true; $("#cm-sa").removeAttribute("aria-invalid"); $("#cm-su").removeAttribute("aria-invalid"); const g=$("#cm-g"); g.selectedIndex=0; delete g.dataset.touched; const su=$("#cm-su"); delete su.dataset.touched; cmSyncUnits(); $("#cm-sa").value=""; refreshAdded(); setCompForm(false);
+    const body=m.querySelector(".cm-body"); if(body) body.scrollTop=0; }
 }
 function submitItem(){
   const n=($("#im-n")||{}).value.trim(), err=$("#im-err");
@@ -203,7 +208,7 @@ function servedRow(i, ix){
   const comps = i.comps||[], open = i.showComps || comps.length;
   return `<div class="sitem ro" data-ix="${ix}">
     <div class="row1"><span class="fico" aria-hidden="true">${icon("bowl")}</span><div class="cp-main"><b class="cp-n">${esc(i.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny">${esc([gOf(i), fmtAmt(i.sa,i.su)].filter(Boolean).join(" · ")||"ยังไม่ระบุปริมาณ")}</span></div><button type="button" class="icbtn in-edit" aria-label="แก้ไขอาหาร ${esc(i.n||"")}">${icon("edit")}</button><button type="button" class="icbtn in-del" aria-label="ลบรายการ ${esc(i.n||"")}">${icon("trash")}</button></div>
-    ${open?`<div class="comps"><span class="tiny">ส่วนประกอบในจานที่เสิร์ฟ</span>${comps.map((c,cx)=>`<div class="comp ro" data-cx="${cx}"><div class="cp-main"><b class="cp-n">${esc(c.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny">${esc([gOf(c), fmtAmt(c.sa,c.su)].filter(Boolean).join(" · "))}</span></div><button type="button" class="icbtn c-edit" aria-label="แก้ไขส่วนประกอบ ${esc(c.n||"")}">${icon("edit")}</button><button type="button" class="icbtn c-del" aria-label="ลบส่วนประกอบ ${esc(c.n||"")}">${icon("trash")}</button></div>`).join("")}
+    ${open?`<div class="comps"><span class="tiny">ส่วนประกอบ</span>${comps.map((c,cx)=>`<div class="comp ro" data-cx="${cx}"><div class="cp-main"><b class="cp-n">${esc(c.n||"(ยังไม่ใส่ชื่อ)")}</b><span class="tiny">${esc([gOf(c), fmtAmt(c.sa,c.su)].filter(Boolean).join(" · "))}</span></div><button type="button" class="icbtn c-edit" aria-label="แก้ไขส่วนประกอบ ${esc(c.n||"")}">${icon("edit")}</button><button type="button" class="icbtn c-del" aria-label="ลบส่วนประกอบ ${esc(c.n||"")}">${icon("trash")}</button></div>`).join("")}
       <button type="button" class="btn sm c-add" style="justify-self:start">${icon("plus")}เพิ่มส่วนประกอบ</button></div>`
       :`<button type="button" class="ctog c-open">+ แตกส่วนประกอบของเมนูนี้</button>`}
   </div>`;
@@ -282,7 +287,7 @@ function validateLog(){
   const missing=[], e=R.e, l=R.l;
   if(R.tab==="meal"){
     const items=e.items.filter(i=>i.n);
-    if(!items.length) missing.push("อาหารที่เสิร์ฟ");
+    if(!items.length) missing.push("เมนูที่เสิร์ฟ");
     else if(items.some(i=>!i.st)) missing.push("การกินหรือไม่กิน");
     else if(items.some(i=>!itemDone(i))) missing.push("ปริมาณที่กิน");
     const okT = v => /^\d{2}:\d{2}$/.test(v||"");
@@ -344,16 +349,16 @@ function draw(){
     }
     const dur = e.start&&e.end ? ((toMin(e.end)-toMin(e.start))+1440)%1440 : null;
     const named = e.items.filter(i=>i.n), nItems = named.length, nDone = named.filter(itemDone).length;
-    b += sec("served",++no,`อาหารที่เสิร์ฟ<button type="button" class="info-btn" data-info="info-served" aria-label="วิธีใส่ปริมาณ" aria-expanded="false">${icon("info")}</button>`, hintFor("served"), `
+    b += sec("served",++no,`เมนูที่เสิร์ฟ<button type="button" class="info-btn" data-info="info-served" aria-label="วิธีใส่ปริมาณ" aria-expanded="false">${icon("info")}</button>`, hintFor("served"), `
       <div class="info-note" id="info-served" hidden>ใส่ปริมาณเป็นหน่วยที่ใช้จริงที่บ้าน เช่น 1 ทัพพี 1 ฟอง 5 ชิ้น ไม่ต้องชั่ง · เมนูรวม เช่น สปาเก็ตตี้ครีมซอสแซลมอน กด "แตกส่วนประกอบ" เพื่อแยกเส้น แซลมอน ซอส ผัก</div>
 
       <datalist id="food-list">${knownFoods().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
-      <div style="display:grid;gap:8px" id="l-items">${e.items.length ? e.items.map(servedRow).join("") : `<div class="empty">${icon("bowl")}<b>ยังไม่มีอาหารที่เสิร์ฟ</b><span class="tiny">เพิ่มเมนูที่เสิร์ฟลูกในมื้อนี้</span><button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button></div>`}</div>
-      ${e.items.length ? `<button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มอาหารที่เสิร์ฟ</button>` : ""}`, nItems>0);
-    b += sec("eaten",++no,"อาหารที่กินจริง", hintFor("eaten"), nItems ? `
+      <div style="display:grid;gap:8px" id="l-items">${e.items.length ? e.items.map(servedRow).join("") : `<div class="empty">${icon("bowl")}<b>ยังไม่มีเมนูที่เสิร์ฟ</b><span class="tiny">เพิ่มเมนูที่เสิร์ฟลูกในมื้อนี้</span><button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มเมนูที่เสิร์ฟ</button></div>`}</div>
+      ${e.items.length ? `<button type="button" class="btn" id="l-additem">${icon("plus")}เพิ่มเมนูที่เสิร์ฟ</button>` : ""}`, nItems>0);
+    b += sec("eaten",++no,"เมนูที่ทาน", hintFor("eaten"), nItems ? `
       <div style="display:grid;gap:8px" id="l-eaten">${e.items.map((i,ix)=>i.n?eatenRow(i,ix):"").join("")}</div>
       <div><h4 style="margin:6px 0 8px">สรุปมื้อนี้ตาม 5 หมู่</h4><div id="l-sum">${sumHTML()}</div></div>` : `
-      <div class="empty" id="l-eaten">${icon("bowl")}<b>กรุณาระบุเมนูอาหารที่เสิร์ฟก่อน</b></div>`, nItems&&nDone===nItems);
+      <div class="empty" id="l-eaten">${icon("bowl")}<b>กรุณาระบุเมนูที่เสิร์ฟก่อน</b></div>`, nItems&&nDone===nItems);
     b += sec("time",++no,"เวลา", hintFor("time"), `<div class="frow frow-col">
       <label class="field">เริ่ม<span class="tin"><input ${A.TIME_ATTR} id="l-start" value="${esc(e.start)}"><button type="button" class="btn sm" data-now="l-start">ตอนนี้</button></span></label>
       <label class="field">จบ<span class="tin"><input ${A.TIME_ATTR} id="l-end" value="${esc(e.end)}"><button type="button" class="btn sm" data-now="l-end">ตอนนี้</button></span></label></div>`, dur!=null);
@@ -403,7 +408,7 @@ function readItemsFixUnits(){
     (i.comps||[]).forEach((c,x)=>{ if(b[1][x]!==undefined && gOf(c)!==b[1][x]) c.su = fixUnit(c.su, gOf(c)); }); });
 }
 function readItems(){
-  /* อาหารที่เสิร์ฟและส่วนประกอบแก้ในป๊อปอัป ไม่อ่านจาก DOM */
+  /* เมนูที่เสิร์ฟและส่วนประกอบแก้ในป๊อปอัป ไม่อ่านจาก DOM */
   $$("#l-eaten .eitem").forEach(r=>{ const i=R.e.items[+r.dataset.ix]; if(!i) return;
     const ea=r.querySelector(".in-ea"); if(ea){ const v=ea.value.trim(); if(v){ i.ea=v; i.eu=r.querySelector(".in-eu").value; i.frac=null; } else if(i.frac==null) i.ea=""; }
     $$(".ecomp", r).forEach(cr=>{ const c=i.comps[+cr.dataset.cx]; const x=cr.querySelector(".ec-ea"); if(c&&x){ c.ea=x.value.trim(); c.eu=cr.querySelector(".ec-eu").value; } });
@@ -562,7 +567,7 @@ function renderFoodPicker(){
 function openFoodPicker(o){
   readMeal(); closeWhoModal();
   const m=document.createElement("div"); m.id="food-modal"; m.className="whomodal top"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","wm-title");
-  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide fp-card"><h3 id="wm-title">${o&&o.comp?"เลือกส่วนประกอบ":"เพิ่มอาหารที่เสิร์ฟ"}</h3><div class="combo"><span class="combo-ic">${icon("search")}</span><input class="inp combo-in" id="fp-q" type="text" role="combobox" aria-controls="fp-list" aria-autocomplete="list" autocomplete="off" enterkeyhint="search" placeholder="${o&&o.comp?"เลือกหรือค้นหาส่วนประกอบ":"เลือกหรือค้นหาเมนูที่เคยบันทึก"}" aria-label="เลือกหรือค้นหา"></div><ul class="fp-list" id="fp-list" role="listbox"></ul><div class="fp-foot" id="fp-foot"></div><div class="wm-act"><button type="button" class="btn" data-wm-close>ปิด</button></div></div>`;
+  m.innerHTML=`<div class="wm-bg" data-wm-close></div><div class="wm-card wide fp-card"><h3 id="wm-title">${o&&o.comp?"เลือกส่วนประกอบ":"เพิ่มเมนูที่เสิร์ฟ"}</h3><div class="combo"><span class="combo-ic">${icon("search")}</span><input class="inp combo-in" id="fp-q" type="text" role="combobox" aria-controls="fp-list" aria-autocomplete="list" autocomplete="off" enterkeyhint="search" placeholder="${o&&o.comp?"เลือกหรือค้นหาส่วนประกอบ":"เลือกหรือค้นหาเมนูที่เคยบันทึก"}" aria-label="เลือกหรือค้นหา"></div><ul class="fp-list" id="fp-list" role="listbox"></ul><div class="fp-foot" id="fp-foot"></div><div class="wm-act"><button type="button" class="btn" data-wm-close>ปิด</button></div></div>`;
   if(o&&o.comp) m.dataset.comp="1"; $("#sheet").appendChild(m); renderFoodPicker();
 }
 function moveFood(d){
@@ -622,6 +627,7 @@ panel.addEventListener("click", ev=>{
   if(t.closest(".c-open") || t.closest(".c-add")){ readItems(); openCompModal(ix(t)); return; }
   if(t.closest("#cm-ok")){ submitComp(); return; }
   if(t.closest("#cm-more")){ submitComp(true); return; }
+  if(t.closest("#cm-next")){ setCompForm(true); const f=$("#cm-form"); if(f) f.scrollIntoView({block:"nearest"}); return; }
   const cmd=t.closest(".cm-del"); if(cmd){ delAddedComp(+cmd.closest(".cm-card").dataset.i); return; }
   if(t.closest(".c-del")){ readItems(); const i=R.e.items[ix(t)]; i.comps.splice(+t.closest("[data-cx]").dataset.cx,1); A.logDirty=true; redraw(); return; }
   const st=t.closest(".stseg button"); if(st && st.dataset.st && t.closest(".item")){ readItems(); R.e.items[+st.closest(".item").dataset.ix].st=st.dataset.st; A.logDirty=true; redraw(); return; }
