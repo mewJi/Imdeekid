@@ -52,7 +52,7 @@ function mealCard(d, M){
   if(bh) tabs.push(["พฤติกรรม", bh]);
   const nph = (m.photos?m.photos.before.length+m.photos.after.length:0);
   let ph = "";
-  if(nph) ph += `<div class="photos">${["before","after"].map(k=>`<figure><figcaption>${k==="before"?"ก่อนกิน":"หลังกิน"}</figcaption>${(m.photos[k]||[]).length?m.photos[k].map(u=>`<img src="${esc(u)}" alt="${M.name} ${k==="before"?"ก่อนกิน":"หลังกิน"}" loading="lazy" data-zoom>`).join(""):A.empty("ไม่มีรูป")}</figure>`).join("")}</div>`;
+  if(nph) ph += `<div class="photos">${["before","after"].map(k=>`<figure><figcaption>${k==="before"?"ก่อนกิน":"หลังกิน"}</figcaption>${(m.photos[k]||[]).length?`<div class="prow">${m.photos[k].map(u=>`<img src="${esc(u)}" alt="${M.name} ${k==="before"?"ก่อนกิน":"หลังกิน"}" loading="lazy" data-zoom>`).join("")}</div>`:A.empty("ไม่มีรูป")}</figure>`).join("")}</div>`;
   if(m.before||m.after) ph += `<dl class="kv"><dt>ที่ตักให้</dt><dd>${esc(m.before||"–")}</dd><dt>ที่เหลือ</dt><dd>${esc(m.after||"–")}</dd></dl>`;
   if(m.eaten) ph += `<div><h4 style="margin-bottom:8px">ปริมาณตามหมู่อาหาร เทียบเป้า${M.name}</h4><div class="gbars">${GROUPS.filter(g=>g.k!=="fat").map(g=>{ const v=+m.eaten[g.k]||0, tg=g.daily*M.share, p=Math.round(v/tg*100); return `<div class="gbar"><span>${g.name}</span><span class="track"><i style="width:${Math.min(100,p/1.5)}%;background:var(${g.v})"></i><b style="left:${100/1.5}%"></b></span><span class="num tiny">${v} ${g.unit} · ${p}%</span></div>`; }).join("")}</div><p class="tiny" style="margin-top:6px">เส้นขีด = เป้าของมื้อ · ${esc(m.estimateNote||"ค่าประเมิน ไม่ได้ชั่ง")}</p></div>`;
   if(m.snack) ph += `<p class="sub">ขนมหลังมื้อ: ${esc(m.snack.name)} ${esc(m.snack.amount)}</p>`;

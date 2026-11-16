@@ -616,7 +616,7 @@ async function addPhoto(input){
   readMeal(); const room=Math.max(0, MAX_PHOTOS-(R.e.photos[k]||[]).length), fs=all.slice(0,room), cut=all.length>fs.length;
   const um=$("#l-up"); if(um) um.textContent="กำลังอัปโหลดรูป…";
   if(!fs.length){ if(um) um.textContent=`เพิ่มได้สูงสุด ${MAX_PHOTOS} รูปต่อช่อง`; return; }
-  try{ for(const f of fs){ const sm=await A.resizeImg(f,1280); const r=await S.assets.upload(sm.blob); R.e.photos[k].push(S.assets.local ? {id:r.id} : {id:r.id,url:r.url}); } A.logDirty=true; redraw(); if(cut){ const msg5=`เพิ่มได้สูงสุด ${MAX_PHOTOS} รูปต่อช่อง ระบบเพิ่มให้ ${fs.length} รูปแรก`; const m2=$("#l-up"); if(m2) m2.textContent=msg5; if(A.toast) A.toast(msg5); } }
+  try{ for(const f of fs){ const sm=await A.resizeImg(f,1280); const r=await S.assets.upload(sm.blob); R.e.photos[k].push((S.assets.local||S.assets.idOnly) ? {id:r.id} : {id:r.id,url:r.url}); } A.logDirty=true; redraw(); if(cut){ const msg5=`เพิ่มได้สูงสุด ${MAX_PHOTOS} รูปต่อช่อง ระบบเพิ่มให้ ${fs.length} รูปแรก`; const m2=$("#l-up"); if(m2) m2.textContent=msg5; if(A.toast) A.toast(msg5); } }
   catch(_){ if(um) um.textContent="อัปโหลดรูปไม่สำเร็จ ลองใหม่"; }
 }
 const panel = $("#sheet");

@@ -199,17 +199,19 @@ const LA = App.localAssets = (() => {
   return {
     local:true, urls,
     async upload(blob){ const id="l"+Date.now().toString(36)+Math.random().toString(36).slice(2,8); await run("readwrite", s=>s.put(blob,id)); urls[id]=URL.createObjectURL(blob); return {id, url:urls[id]}; },
+    async blobs(){ const out={}; try{ const d=await open(); await new Promise(res=>{ const q=d.transaction("blobs").objectStore("blobs").openCursor(); q.onsuccess=()=>{ const c=q.result; if(c){ out[c.key]=c.value; c.continue(); } else res(); }; q.onerror=()=>res(); }); }catch(e){} return out; },
     async load(){ try{ const d=await open(); await new Promise(res=>{ const q=d.transaction("blobs").objectStore("blobs").openCursor(); q.onsuccess=()=>{ const c=q.result; if(c){ urls[c.key]=URL.createObjectURL(c.value); c.continue(); } else res(); }; q.onerror=()=>res(); }); }catch(e){} },
   };
 })();
-App.photoUrl = p => (p && p.id && LA.urls[p.id]) || (p && p.url) || ("/_blob/"+(p&&p.id));
+App.photoUrl = p => (p && p.id && ((S.assets && S.assets.urls && S.assets.urls[p.id]) || LA.urls[p.id])) || (p && p.url) || ("/_blob/"+(p&&p.id));
 App.connect = async () => {
   let db=null, user=null, assets=null;
-  try{ if(window.claude && claude.use){ [db,user,assets] = await Promise.all([claude.use("db"),claude.use("user"),claude.use("assets")]); } }catch(e){}
+  try{ if(App.cloud && App.cloud.enabled){ const c = await App.cloud.init(); if(c){ db=c.db; user=c.user; assets=c.assets; } } }catch(e){ console.error(e); }  /* ฐานข้อมูลกลาง (Supabase) ถ้าตั้งค่าใน js/config.js */
+  try{ if(!db && window.claude && claude.use){ [db,user,assets] = await Promise.all([claude.use("db"),claude.use("user"),claude.use("assets")]); } }catch(e){}
   if(!assets){ await LA.load(); assets = LA; }
   S.assets = assets;
   if(!db){ S.mode="local"; loadLocal(); App.setSync("โหมดออฟไลน์ · บันทึกในเครื่องนี้"); App.emit("all"); return; }
-  S.db=db; S.mode="db"; App.setSync("เชื่อมต่อแล้ว · แชร์กับทุกคนในบ้าน");
+  S.db=db; S.mode="db"; App.setSync(App.cloud && App.cloud.enabled ? "ซิงก์กับฐานข้อมูลกลางแล้ว" : "เชื่อมต่อแล้ว · แชร์กับทุกคนในบ้าน");
   try{ if(user && user.can){ const c = await user.can("data.write"); if(c===false){ S.canWrite=false; App.setSync("ดูได้อย่างเดียว"); } } }catch(e){}
   try{ if(user && user.id) S.uid = await user.id(); }catch(e){}
   const timer=setTimeout(()=>App.setSync("ยังเชื่อมต่อข้อมูลไม่ได้ อาจไม่ใช่ข้อมูลล่าสุด"),10000);

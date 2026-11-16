@@ -242,7 +242,11 @@ svg text{font-family:var(--f-body)}
 .fchip small{color:var(--ink-3);margin-left:4px}
 .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:.88rem}
 .kv dt{color:var(--ink-3)} .kv dd{margin:0}
-.photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.photos{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+/* รูปก่อนกินอยู่แถวบน รูปหลังกินแถวล่าง ถ้ามีหลายรูปเลื่อนไปทางขวาได้ */
+.prow{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.photos .prow img{flex:none;width:min(78%,280px);min-width:0;scroll-snap-align:start}
+.photos .prow img:only-child{width:min(100%,360px)}
 .photos figure{margin:0;display:grid;gap:6px}
 .photos figcaption{font-size:.78rem;color:var(--ink-3)}
 .photos img{border-radius:var(--r-sm);aspect-ratio:4/3;object-fit:cover;width:100%;cursor:zoom-in;border:1px solid var(--line)}
@@ -888,3 +892,10 @@ input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .tg .dtl:not(.done) .dtl-st .ic{stroke-width:3}
 /* chip วันนี้ในแถบวัน: คลาส .today ไปชนกับ grid ของการ์ด "วันนี้" ทำให้จุด 3 จุดบีบ — ยกเลิก grid ของคลาสนั้นที่ chip */
 .dchip.today{grid-template-columns:none;gap:2px;display:grid}
+/* หน้า login / เลือกครอบครัว (ฐานข้อมูลกลาง) */
+.cgate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:16px;background:var(--bg)}
+.cg-card{width:min(380px,100%);display:grid;gap:12px;padding:22px;border:1px solid var(--line-2);border-radius:18px;background:var(--bg-2);box-shadow:0 24px 70px rgba(0,0,0,.35)}
+.cg-card h2{margin:0;text-align:center}
+.cg-logo{width:48px;height:48px;border-radius:14px;margin:0 auto;display:grid;place-items:center;color:#fff;font-family:var(--f-display);font-weight:700;font-size:1.3rem;background:linear-gradient(135deg,var(--accent),var(--g-fat))}
+.cg-card .sub{text-align:center;margin:0}
+.cg-opt{display:grid;gap:8px;padding:12px;border:1px dashed var(--line-2);border-radius:12px}

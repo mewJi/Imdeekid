@@ -9,7 +9,7 @@ async function saveSettings(patch){
   return ok;
 }
 A.views.settings = { render(){
-  const el=$("#v-settings"), c=A.child(), ph=S.profile.photoUrl||S.profile.photoData;
+  const el=$("#v-settings"), c=A.child(), ph=S.profile.photoUrl||S.profile.photoData||(S.profile.photoId&&A.photoUrl({id:S.profile.photoId}));
   const mem = draftMembers || [...A.members()];
   el.innerHTML = `<div class="card">${A.cardHead("ข้อมูลลูก","ใช้คำนวณอายุและเกณฑ์การเจริญเติบโต")}
     <div class="set-row"><div><h4>รูปโปรไฟล์</h4><p class="tiny">แสดงในเมนูและรายงาน</p></div><div style="display:flex;gap:12px;align-items:center"><span class="ava" style="width:64px;height:64px;font-size:1.4rem">${ph?`<img src="${esc(ph)}" alt="">`:esc(c.name.slice(0,1))}</span><label class="btn sm">${icon("camera")}เปลี่ยนรูป<input type="file" accept="image/*" id="st-photo" hidden></label></div></div>
@@ -33,6 +33,12 @@ A.views.settings = { render(){
     <p class="tiny" style="margin-top:8px">หน่วยที่เพิ่มเองบันทึกได้ตามปกติ แต่ระบบยังไม่แปลงเป็นพลังงานหรือหมู่อาหาร ส่วนรายการที่เคยบันทึกด้วยหน่วยที่เอาออกจะยังแสดงตามเดิม</p>
     <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" id="st-save-units">บันทึกหน่วยเริ่มต้น</button></div>
   </div>
+  ${(A.cloud && A.cloud.enabled && S.mode==="db") ? (()=>{ const ci=A.cloud.info(), nLocal=A.cloud.localCount(); return `<div class="card">${A.cardHead("บัญชีและครอบครัว","ข้อมูลทั้งหมดเก็บในฐานข้อมูลกลาง เปิดจากเครื่องไหนก็เห็นชุดเดียวกัน")}
+    <div class="set-row"><div><h4>บัญชีที่ใช้</h4><p class="tiny">${esc(ci.email||"")}</p></div><div><p class="sub">${esc(ci.household||"ครอบครัว")} · ${ci.role==="owner"?"เจ้าของ":ci.role==="viewer"?"ดูอย่างเดียว":"แก้ไขได้"}</p><div id="cl-members" class="tiny"></div></div></div>
+    ${ci.role==="owner"?`<div class="set-row"><div><h4>เชิญคนในบ้าน</h4><p class="tiny">สร้างรหัสให้อีกคนเอาไปกรอกตอนเข้าสู่ระบบ ใช้ได้ครั้งเดียว หมดอายุใน 7 วัน</p></div><div style="display:grid;gap:8px"><div class="stseg" id="cl-role"><button type="button" class="m-u" data-r="editor" aria-pressed="true">แก้ไขได้</button><button type="button" class="m-u" data-r="viewer" aria-pressed="false">ดูอย่างเดียว</button></div><button class="btn" id="cl-inv" type="button">${icon("plus")}สร้างรหัสเชิญ</button><b id="cl-code" class="num" style="font-size:1.3rem;letter-spacing:.12em"></b></div></div>`:""}
+    ${nLocal?`<div class="set-row"><div><h4>นำเข้าข้อมูลจากเครื่องนี้</h4><p class="tiny">พบข้อมูลที่เคยบันทึกในเบราว์เซอร์เครื่องนี้ ${nLocal} รายการ ย้ายขึ้นฐานข้อมูลกลาง (ไม่ลบของเดิม)</p></div><div><button class="btn" id="cl-imp" type="button">นำเข้า</button><p class="tiny" id="cl-impmsg"></p></div></div>`:""}
+    <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn" id="cl-out" type="button">ออกจากระบบ</button></div>
+  </div>`; })() : ""}
   <div class="card">${A.cardHead("การแสดงผลและข้อมูล")}
     <div class="set-row"><div><h4>ธีม</h4></div><div>${A.seg("theme", [["dark","มืด"],["light","สว่าง"]], S.theme)}</div></div>
     <div class="set-row"><div><h4>ข้อมูลตัวอย่าง</h4><p class="tiny">ข้อมูลสาธิต 8 วัน (คลิป รูป และบันทึกผู้ปกครอง) ปิดเมื่อเริ่มใช้งานจริง ข้อมูลที่บันทึกเองไม่หาย</p></div><div>${A.seg("demo", [["on","แสดง"],["off","ซ่อน"]], S.settings.demo?"on":"off")}</div></div>
@@ -60,10 +66,16 @@ A.views.settings = { render(){
     const ue=unitEdits(), e=ue[cat]||(ue[cat]={added:[],removed:[]}); e.added=e.added||[]; e.removed=e.removed||[];
     if(A.baseUnitsFor(cat).some(([u])=>u===v)){ if(!e.removed.includes(v)) e.removed.push(v); } else e.added=e.added.filter(x=>x!==v); saveUnits(ue); });
   $$(".u-reset", el).forEach(b=>b.onclick=()=>{ const ue=unitEdits(); delete ue[b.dataset.cat]; saveUnits(ue); });
+  if($("#cl-out")){ let invRole="editor";
+    $$("#cl-role button", el).forEach(b=>b.onclick=()=>{ invRole=b.dataset.r; $$("#cl-role button", el).forEach(x=>x.setAttribute("aria-pressed", x===b)); });
+    if($("#cl-inv")) $("#cl-inv").onclick=async()=>{ try{ $("#cl-code").textContent = await A.cloud.invite(invRole); }catch(e){ A.toast(e.message); } };
+    if($("#cl-imp")) $("#cl-imp").onclick=async()=>{ const b=$("#cl-imp"), m=$("#cl-impmsg"); b.disabled=true; try{ const n=await A.cloud.importLocal((a,t)=>{ m.textContent=`กำลังนำเข้า ${a}/${t}`; }); m.textContent=`นำเข้าแล้ว ${n} รายการ`; A.emit("all"); }catch(e){ m.textContent=e.message||"นำเข้าไม่สำเร็จ"; b.disabled=false; } };
+    $("#cl-out").onclick=()=>A.cloud.signOut();
+    A.cloud.members().then(ms=>{ const t=$("#cl-members"); if(t) t.textContent = `สมาชิก ${ms.length} คน`; }).catch(()=>{}); }
   $("#st-save-units").onclick = ()=>{ saveSettings({defaultUnits: curDu()}); };
   $("#st-save-mem").onclick = async ()=>{ if(!mem.length){ A.toast("กรุณาระบุคนในบ้านอย่างน้อย 1 คน"); return; } if(await saveSettings({members: mem})) draftMembers=null; };
   $("#st-photo").onchange = async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const sm=await A.resizeImg(f,480);
-    if(S.assets && !S.assets.local){ try{ A.setSync("กำลังอัปโหลดรูป…"); const r=await S.assets.upload(sm.blob); S.profile={photoId:r.id, photoUrl:r.url}; await A.save("app/profile", S.profile); }catch(_){ A.toast("อัปโหลดรูปไม่สำเร็จ"); return; } }
+    if(S.assets && !S.assets.local){ try{ A.setSync("กำลังอัปโหลดรูป…"); const r=await S.assets.upload(sm.blob); S.profile = S.assets.idOnly ? {photoId:r.id} : {photoId:r.id, photoUrl:r.url}; await A.save("app/profile", S.profile); }catch(_){ A.toast("อัปโหลดรูปไม่สำเร็จ"); return; } }
     else { S.profile={photoData:sm.url}; A.LS.set("app/profile", S.profile); }
     A.toast("เปลี่ยนรูปแล้ว"); A.emit("profile"); };
 }};
