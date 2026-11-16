@@ -789,14 +789,14 @@ input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .today.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* การ์ด "วันนี้": วงกลมไอคอน + ตัวเครื่องหมาย + (บันทึกแล้วเป็น ✓) ประหยัดพื้นที่ */
 .today.dots,.today.dots.two{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:center}
-.dot{position:relative;width:100%;max-width:60px;aspect-ratio:1;justify-self:center;border-radius:50%;border:1.5px dashed var(--line-2);background:transparent;color:var(--ink-3);display:grid;place-items:center;cursor:pointer;padding:0}
-.dot:hover{border-color:var(--accent);color:var(--accent-ink)}
-.dot-ic{display:grid;place-items:center;width:46%;height:46%}
-.dot-ic .ic{width:100%;height:100%}
-.dot-st{position:absolute;right:-3px;bottom:-3px;width:36%;max-width:22px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;border:2px solid var(--surface)}
-.dot-st .ic{width:68%;height:68%;stroke-width:3}
-.dot.done{border-style:solid;border-color:color-mix(in srgb,var(--good) 55%,transparent);background:color-mix(in srgb,var(--good) 10%,var(--surface-2));color:var(--good)}
-.dot.done .dot-st{background:var(--good)}
+.dtl{position:relative;width:100%;max-width:60px;aspect-ratio:1;justify-self:center;border-radius:50%;border:1.5px dashed var(--line-2);background:transparent;color:var(--ink-3);display:grid;place-items:center;cursor:pointer;padding:0}
+.dtl:hover{border-color:var(--accent);color:var(--accent-ink)}
+.dtl-ic{display:grid;place-items:center;width:46%;height:46%}
+.dtl-ic .ic{width:100%;height:100%}
+.dtl-st{position:absolute;right:-3px;bottom:-3px;width:36%;max-width:22px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;border:2px solid var(--surface)}
+.dtl-st .ic{width:68%;height:68%;stroke-width:3}
+.dtl.done{border-style:solid;border-color:color-mix(in srgb,var(--good) 55%,transparent);background:color-mix(in srgb,var(--good) 10%,var(--surface-2));color:var(--good)}
+.dtl.done .dtl-st{background:var(--good)}
 /* เมนูที่ทาน (เมนูที่มีส่วนประกอบ): โหมดกินหมด/กินบางอย่าง + เศษส่วนต่อส่วนประกอบ + กล่องสารอาหาร */
 .modeseg{flex-wrap:nowrap}
 .modeseg button{flex:1 1 0;min-width:0;text-align:center}
@@ -865,3 +865,26 @@ input[data-time]{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .noeat{display:grid;gap:4px;padding-top:2px}
 .noeat .m-cap{display:block;font-size:.78rem;color:var(--ink-3)}
 .noeat .fracs{gap:6px}
+/* การ์ด "วันนี้": 3 กลุ่ม คั่นด้วยเส้นแนวตั้ง แต่ละกลุ่มมีสีวงกลมต่างกัน */
+.tgroups{display:flex;flex-wrap:wrap;gap:16px 0;align-items:flex-start}
+.tg{display:grid;gap:8px;padding:0 14px;border-left:1px solid var(--line);--gc:var(--accent)}
+.tg:first-child{padding-left:0;border-left:0}
+.tg.tg-b{--gc:var(--g-milk)}
+.tg.tg-c{--gc:var(--g-fat)}
+.tg-l{font-size:.72rem;font-weight:600;color:var(--ink-3)}
+.tg-r{display:flex;gap:8px}
+.tg .dtl{width:44px;max-width:none;flex:none;border-color:color-mix(in srgb,var(--gc) 55%,transparent);color:var(--gc)}
+.tg .dtl:hover{border-color:var(--gc);color:var(--gc)}
+.tg .dtl-st{background:var(--gc)}
+/* บันทึกแล้ว: วงกลมทึบสีประจำกลุ่ม เฉพาะป้าย ✓ เป็นสีเขียว success */
+.tg .dtl.done,.tg .dtl.done:hover{border-color:var(--gc);background:var(--gc);color:var(--on-accent)} /* กรอกแล้ว: พื้นวงกลมทึบสีกลุ่ม ไอคอนสีตัดกัน */
+.tg .dtl.done .dtl-st{background:var(--good);color:#fff}
+/* กรอบการ์ดแคบ: กลุ่ม 3 ขึ้นบรรทัดใหม่ ไม่ต้องมีเส้นคั่นซ้าย (วัดจากความกว้างการ์ด ไม่ใช่หน้าจอ) */
+.tgw{container-type:inline-size;container-name:tgw}
+@container tgw (max-width:469px){.tg.tg-c{border-left:0;padding-left:0}}
+@container tgw (max-width:289px){.tg{border-left:0;padding-left:0}}
+/* ยังไม่ได้กรอก: ป้าย + เป็น outline สีของกลุ่ม (พื้นขาว/ใสในกรอบสีกลุ่ม) ส่วน ✓ ที่กรอกแล้วคงเป็นสีเขียวทึบ */
+.tg .dtl:not(.done) .dtl-st{background:var(--surface);color:var(--gc);border:1.5px solid var(--gc)}
+.tg .dtl:not(.done) .dtl-st .ic{stroke-width:3}
+/* chip วันนี้ในแถบวัน: คลาส .today ไปชนกับ grid ของการ์ด "วันนี้" ทำให้จุด 3 จุดบีบ — ยกเลิก grid ของคลาสนั้นที่ chip */
+.dchip.today{grid-template-columns:none;gap:2px;display:grid}

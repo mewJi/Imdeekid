@@ -5,7 +5,7 @@ const A = window.App, {$,esc,icon,S,MEALS,thShort,thLong,TH_DS,parseD,today} = A
 /* การ์ด "วันนี้": แต่ละประเภทเป็นเมนูแยก — กดเพื่อบันทึก/แก้ไข ถ้าบันทึกแล้วขึ้นเครื่องหมาย "บันทึกแล้ว" */
 function tile(ic, name, log, done, sum){
   const tip = done ? `${name} · บันทึกแล้ว${sum?" · "+sum:""} (แตะเพื่อแก้ไข)` : `เพิ่มบันทึก${name}`;
-  return `<button type="button" class="dot ${done?"done":""}" data-log="${log}" data-tip="${esc(tip)}" aria-label="${esc(tip)}"><span class="dot-ic">${icon(ic)}</span><span class="dot-st">${icon(done?"check":"plus")}</span></button>`;
+  return `<button type="button" class="dtl ${done?"done":""}" data-log="${log}" data-tip="${esc(tip)}" aria-label="${esc(tip)}"><span class="dtl-ic">${icon(ic)}</span><span class="dtl-st">${icon(done?"check":"plus")}</span></button>`;
 }
 function todayCard(d){
   const l = S.daylogs[d] || null;
@@ -20,9 +20,11 @@ function todayCard(d){
   const bodyDone = !!(l && (l.weight || l.height));
   const L = t => `${d}||${t}`;
   return `<div class="card">${A.cardHead("วันนี้", "บันทึกหลังมื้อได้ ไม่ต้องหยิบมือถือระหว่างที่ลูกกิน")}
-    <div class="today dots">${meals}${tile("milk","นม",L("milk"),milkDone, ml?`${ml} มล.`:"บันทึกน้ำเปล่า")}${tile("snack","ของว่าง",L("snack"),snacks.length>0, `${snacks.length} รายการ`)}${tile("moon","นอน",L("sleep"),sl.length>0, `${sl.length} รอบ`)}</div>
-    <div class="dash-div" role="separator"><span>ไม่บังคับ</span></div>
-    <div class="today dots two">${tile("thermo","อาการ",L("health"),healthDone, sym.length?sym.join(", "):"")}${tile("scale","น้ำหนัก / ส่วนสูง",L("body"),bodyDone, l?[l.weight?`${l.weight} กก.`:"", l.height?`${l.height} ซม.`:""].filter(Boolean).join(" · "):"")}</div>
+    <div class="tgw"><div class="tgroups">
+      <div class="tg tg-a"><span class="tg-l">มื้ออาหาร</span><div class="tg-r">${meals}</div></div>
+      <div class="tg tg-b"><span class="tg-l">นมและของว่าง</span><div class="tg-r">${tile("milk","นม",L("milk"),milkDone, ml?`${ml} มล.`:"บันทึกน้ำเปล่า")}${tile("snack","ของว่าง",L("snack"),snacks.length>0, `${snacks.length} รายการ`)}</div></div>
+      <div class="tg tg-c"><span class="tg-l">วงจรชีวิต</span><div class="tg-r">${tile("moon","นอน",L("sleep"),sl.length>0, `${sl.length} รอบ`)}${tile("thermo","อาการ",L("health"),healthDone, sym.length?sym.join(", "):"")}${tile("scale","น้ำหนักและส่วนสูง",L("body"),bodyDone, l?[l.weight?`${l.weight} กก.`:"", l.height?`${l.height} ซม.`:""].filter(Boolean).join(" · "):"")}</div></div>
+    </div></div>
   </div>`;
 }
 function kpi(cls, ic, k, v, s){ if(v==="–"){ cls="none"; v="ไม่มี"; } /* ไม่มีค่า: แสดงคำว่า "ไม่มี" สีอ่อน ไม่ใช้สีเตือน */ return `<div class="kpi ${cls}"><span class="bar"></span><span class="k">${icon(ic)}${k}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`; }
