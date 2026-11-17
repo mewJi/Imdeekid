@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const A = window.App, {$,esc,icon,S,MEALS,thShort,thLong,TH_DS,parseD,today} = A;
+const A = window.App, {$,$$,esc,icon,S,MEALS,thShort,thLong,TH_DS,parseD,today} = A;
 
 /* การ์ด "วันนี้": แต่ละประเภทเป็นเมนูแยก — กดเพื่อบันทึก/แก้ไข ถ้าบันทึกแล้วขึ้นเครื่องหมาย "บันทึกแล้ว" */
 function tile(ic, name, log, done, sum){
@@ -19,7 +19,7 @@ function todayCard(d){
   const healthDone = !!(l && (sym.length || l.stool || l.symNote || l.note));
   const bodyDone = !!(l && (l.weight || l.height));
   const L = t => `${d}||${t}`;
-  return `<div class="card">${A.cardHead("วันนี้", "บันทึกหลังมื้อได้ ไม่ต้องหยิบมือถือระหว่างที่ลูกกิน")}
+  return `<div class="card">${A.cardHead(d===today() ? "วันนี้" : thLong(d), d===today() ? "บันทึกหลังมื้อได้ ไม่ต้องหยิบมือถือระหว่างที่ลูกกิน" : "กำลังดู/บันทึกย้อนหลังของวันที่เลือก")}
     <div class="tgw"><div class="tgroups">
       <div class="tg tg-a"><span class="tg-l">มื้ออาหาร</span><div class="tg-r">${meals}</div></div>
       <div class="tg tg-b"><span class="tg-l">นมและของว่าง</span><div class="tg-r">${tile("milk","นม",L("milk"),milkDone, ml?`${ml} มล.`:"บันทึกน้ำเปล่า")}${tile("snack","ของว่าง",L("snack"),snacks.length>0, `${snacks.length} รายการ`)}</div></div>
@@ -27,7 +27,7 @@ function todayCard(d){
     </div></div>
   </div>`;
 }
-function kpi(cls, ic, k, v, s){ if(v==="–"){ cls="none"; v="ไม่มี"; } /* ไม่มีค่า: แสดงคำว่า "ไม่มี" สีอ่อน ไม่ใช้สีเตือน */ return `<div class="kpi ${cls}"><span class="bar"></span><span class="k">${icon(ic)}${k}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`; }
+function kpi(cls, ic, k, v, s){ if(v==="–"){ cls="none"; } /* ไม่มีค่า: แสดงขีด "–" สีอ่อน ไม่ใช้สีเตือน */ return `<div class="kpi ${cls}"><span class="bar"></span><span class="k">${icon(ic)}${k}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`; }
 
 function kcell(d){
   const di = A.dayIntake(d);
@@ -37,8 +37,8 @@ function kcell(d){
   const tip = `<b>${thShort(d)} · พลังงานโดยประมาณ</b><br>${k} kcal จาก ${need} kcal (${pc}%)<br>มื้อที่ประเมินได้ ${di.est}/3${di.milkMl!=null?` · นม ${di.milkMl} มล.`:" · ยังไม่ได้บันทึกนม"}`;
   return `<div class="kcell" data-tip="${tip}"><b class="num">${k||"–"}<small> kcal</small></b><span class="meter"><i style="width:${Math.min(100,pc)}%;background:var(--${lv})"></i></span><span class="num">${pc}%${di.milkMl==null?" · ไม่รวมนม":""}${di.est<3?` · ${di.est}/3 มื้อ`:""}</span></div>`;
 }
-function heatmap(dates){
-  const ds = [...dates]; const td = today(); if(!ds.includes(td)) ds.push(td);
+function heatmap(dates, addToday=true){
+  const ds = [...dates]; const td = today(); if(addToday && !ds.includes(td)) ds.push(td); ds.sort();
   const rows = ds.slice(-14).reverse();
   let h = `<div class="chart fit"><table class="heat"><thead><tr><th class="d">วัน</th>${MEALS.map(M=>`<th>${M.short}</th>`).join("")}<th style="width:92px">พลังงาน</th></tr></thead><tbody>`;
   rows.forEach(d=>{
@@ -56,7 +56,7 @@ function heatmap(dates){
 }
 
 A.views.home = { render(){
-  const el = $("#v-home"), c = A.child(), dates = A.rangeDates(), s = A.stats(dates), gn = A.growthNow(), td = today();
+  const el = $("#v-home"), c = A.child(), cur = A.periodCur(), {td, anchor, pr, dates} = cur, s = A.stats(dates), gn = A.growthNow();
   const ins = A.insights(dates);
   const n = A.nutri(dates);
   const p = s.p==null?null:Math.round(s.p*100);
@@ -66,24 +66,23 @@ A.views.home = { render(){
   <div class="hello">
     <div><p class="sub">${thLong(td)}</p><h2>${esc(c.name)} วันนี้เป็นอย่างไรบ้าง</h2></div>
   </div>
-  ${todayCard(td)}
-  <div class="range-row">${A.seg("range", [["7","7 วัน"],["14","14 วัน"],["30","30 วัน"],["all","ทั้งหมด"]], S.range, "range-seg")}</div>
-  <div class="sec-h"><div><h2>สรุป ${A.rangeLabel()}</h2><p>${dates.length?`${thShort(dates[0])} – ${thShort(dates[dates.length-1])} · ${dates.length} วันที่มีข้อมูล`:"ยังไม่มีข้อมูลในช่วงนี้"}</p></div></div>
+  ${todayCard(anchor)}
+  ${A.periodBarHTML(cur)}
+  <div class="sec-h"><div><h2>สรุป ${esc(pr.label)}</h2><p>${dates.length?`${dates.length>1?`${thShort(dates[0])} – ${thShort(dates[dates.length-1])} · `:""}${dates.length} วันที่มีข้อมูล`:"ยังไม่มีข้อมูลในช่วงนี้"}</p></div></div>
   <div class="g4">
     ${kpi(p==null?"":A.lev(s.p), "check", "กินอาหารได้", p==null?"–":`${p}<small>%</small>`, s.k?`${s.ok} จาก ${s.k} รายการ`:"ยังไม่มีรายการอาหาร")}
     ${kpi(n.estMeals.length?n.R.kcal.lev:"", "spark", "พลังงานเฉลี่ยต่อวัน", n.estMeals.length?`${Math.round(n.day.kcal)}<small> / ${n.req.kcal} kcal</small>`:"–", n.estMeals.length?(n.milkKnown?`${n.R.kcal.p}% ของความต้องการ`:`จากมื้อหลัก ${n.R.kcal.p}% · ยังไม่รวมนม`):"ยังไม่มีปริมาณที่กิน")}
     ${kpi(s.sitMed==null?"":s.sitMed>=15?"good":s.sitMed>=8?"warn":"bad", "clock", "นั่งกินต่อเนื่องนานสุด", s.sitMed==null?"–":`${Math.round(s.sitMed)}<small> นาที</small>`, s.sitN?`จาก ${s.sitN} มื้อ`:"ยังไม่มีข้อมูล")}
     ${kpi(s.milkAvg==null?"warn":"", "milk", "นมเฉลี่ยต่อวัน", s.milkAvg==null?"–":`${s.milkAvg}<small> มล.</small>`, s.milkAvg==null?"ยังไม่มีบันทึกปริมาณนม":`จาก ${s.milkDays.length} วัน · เป้าราว 2 กล่อง/วัน`)}
   </div>
-  <div class="g-21">
+  <div>
     <div class="card">${A.cardHead(`${esc(c.name)}ได้สารอาหารพอไหม`, `เฉลี่ยต่อวัน เทียบความต้องการของเด็กอายุ ${A.ageText()} น้ำหนัก ${n.req.W} กก.`, `<a class="btn sm" href="#nutrition">ดูละเอียด</a>`)}
       ${n.estMeals.length?`${A.nLegend()}${A.adequacy(n)}<h4 style="margin:18px 0 0">อาหารหลัก 5 หมู่ต่อวัน${n.fiveDays?` <span class="tiny" style="font-weight:400">· ครบ 5 หมู่ ${n.fiveFull}/${n.fiveDays} วัน</span>`:""}</h4>${A.fiveTiles(n)}<p class="tiny" style="margin-top:10px">${n.milkKnown?"":"* ยังไม่รวมนม เพราะยังไม่มีบันทึกปริมาณนม · "}ขีดจาง = 80% (ส่วนที่ควรได้จากมื้อหลัก) · ขีดเข้ม = 100% ของทั้งวัน · ${esc(A.coverageText(n))}</p>`:A.empty("ยังคำนวณไม่ได้","ใส่ปริมาณที่กินในแต่ละมื้อ แล้วระบบจะแปลงเป็นพลังงานให้")}</div>
-    <div class="card">${A.cardHead("ที่ยังขาดหรือควรเพิ่ม", "สรุปจากการคำนวณ ไม่ใช่การวินิจฉัย")}${A.gapsHTML(n.gaps, 4)}</div>
   </div>
   <div class="g-21">
-    <div class="card">${A.cardHead("กินได้แค่ไหน ทีละมื้อ", "14 วันล่าสุด · ตัวเลข = รายการที่กินได้ / รายการที่รู้ผล · คอลัมน์ขวา = พลังงานทั้งวัน", `<a class="btn sm" href="#days">ดูทั้งหมด</a>`)}
+    <div class="card">${A.cardHead("กินได้แค่ไหน ทีละมื้อ", "ล่าสุดไม่เกิน 14 วันในช่วงที่เลือก · ตัวเลข = รายการที่กินได้ / รายการที่รู้ผล · คอลัมน์ขวา = พลังงานทั้งวัน", `<a class="btn sm" href="#days">ดูทั้งหมด</a>`)}
       ${A.legend([["--good","70% ขึ้นไป",";opacity:.8"],["--warn","40–69%"],["--bad","ต่ำกว่า 40%"]])}
-      ${heatmap(A.allDates())}</div>
+      ${heatmap(pr.mode==="day" && !dates.includes(anchor) ? [...dates, anchor] : dates, pr.from<=td && td<=pr.to)}</div>
     <div style="display:grid;gap:20px;align-content:start">
       <div class="card">${A.cardHead("การเจริญเติบโต", gn.last?`วัดล่าสุด ${thShort(gn.last.date)}${gn.ago>7?` · ผ่านมา ${gn.ago} วัน`:""}`:"ยังไม่มีข้อมูล", `<a class="btn sm" href="#growth">กราฟ</a>`)}
         <div class="growth-hero"><div class="ring ${gn.lev}">${gn.lev==="good"?"ตามเกณฑ์":gn.lev==="warn"?"เฝ้าดู":gn.lev==="bad"?"ปรึกษาหมอ":"–"}</div>
@@ -91,19 +90,20 @@ A.views.home = { render(){
         <div class="zlist"><div class="zrow"><span class="sub">น้ำหนักตามอายุ</span>${A.zPill("wfa",gn.z1)}</div><div class="zrow"><span class="sub">ส่วนสูงตามอายุ</span>${A.zPill("lfa",gn.z2)}</div><div class="zrow"><span class="sub">น้ำหนักตามส่วนสูง</span>${A.zPill("wfl",gn.z3)}</div></div>
         ${gn.ago>7?`<button class="btn sm" style="margin-top:12px" data-log="${td}||body">${icon("plus")}ชั่งน้ำหนักวันนี้</button>`:""}
       </div>
-      <div class="card">${A.cardHead("เตรียมก่อนพบคุณหมอ")}
-        <ul class="checks">
-          ${chk(s.milkDays.length>0, "ปริมาณนมแต่ละวัน", s.milkDays.length?`บันทึกแล้ว ${s.milkDays.length} วัน`:"ยังไม่มีบันทึก")}
-          ${chk(gn.last&&gn.ago<=7, "น้ำหนักและส่วนสูงล่าสุด", gn.last?`ล่าสุด ${thShort(gn.last.date)}`:"ยังไม่มี")}
-          ${chk(s.symDays.length>0, "อาการระหว่างหรือหลังมื้อ", s.symDays.length?`บันทึกแล้ว ${s.symDays.length} วัน`:"ไอ สำลัก อาเจียน ท้องผูก")}
-          ${chk(noLog===0, "บันทึกมื้อที่ขาด", noLog?`ขาด ${noLog} มื้อในช่วงนี้`:"ครบ")}
-        </ul>
-        <a class="btn primary" style="margin-top:14px;width:100%;justify-content:center" href="#report">${icon("steth")}เปิดรายงานสำหรับแพทย์</a>
-      </div>
     </div>
+  </div>
+  <div class="card">${A.cardHead("เตรียมก่อนพบคุณหมอ")}
+    <ul class="checks">
+      ${chk(s.milkDays.length>0, "ปริมาณนมแต่ละวัน", s.milkDays.length?`บันทึกแล้ว ${s.milkDays.length} วัน`:"ยังไม่มีบันทึก")}
+      ${chk(gn.last&&gn.ago<=7, "น้ำหนักและส่วนสูงล่าสุด", gn.last?`ล่าสุด ${thShort(gn.last.date)}`:"ยังไม่มี")}
+      ${chk(s.symDays.length>0, "อาการระหว่างหรือหลังมื้อ", s.symDays.length?`บันทึกแล้ว ${s.symDays.length} วัน`:"ไอ สำลัก อาเจียน ท้องผูก")}
+      ${chk(noLog===0, "บันทึกมื้อที่ขาด", noLog?`ขาด ${noLog} มื้อในช่วงนี้`:"ครบ")}
+    </ul>
+    <a class="btn primary" style="margin-top:14px;width:100%;justify-content:center" href="#report">${icon("steth")}เปิดรายงานสำหรับแพทย์</a>
   </div>
   <div class="card">${A.cardHead("สิ่งที่ระบบสังเกตเห็น", "สรุปจากข้อมูลช่วงนี้ ไม่ใช่การวินิจฉัย", `<a class="btn sm" href="#nutrition">ดูการวิเคราะห์</a>`)}
     ${ins.length?`<div class="ins">${ins.map(i=>`<div class="ins-i ${i.lev}"><span class="ico">${icon(i.ic)}</span><div><b>${esc(i.t)}</b><span>${esc(i.d)}</span></div></div>`).join("")}</div>`:A.empty("ยังไม่มีข้อสังเกต","บันทึกเพิ่มอีกสักสองสามวันแล้วระบบจะเริ่มเห็นรูปแบบ")}
   </div>`;
+  A.periodBind(el, cur);
 }};
 })();

@@ -18,7 +18,7 @@ const NAV = [
 ];
 const BNAV = [{v:"home",label:"ภาพรวม",ic:"home"},{v:"days",label:"รายวัน",ic:"cal"},{fab:1},{v:"behavior",label:"วิเคราะห์",ic:"chart",match:"insights"},{v:"report",label:"รายงาน",ic:"steth"}];
 const TITLES = {home:["ภาพรวม","หน้าหลัก"], days:["บันทึกรายวัน","ติดตาม"], insights:["วิเคราะห์","ข้อมูลเชิงลึก"], report:["รายงานสำหรับแพทย์","แบ่งปัน"], routine:["ตารางกิจวัตร","อื่นๆ"], settings:["ตั้งค่า","อื่นๆ"]};
-const RANGED = ["home","insights","report"];
+const RANGED = ["home","report"];
 
 function parse(){
   const h=(location.hash||"").replace(/^#\/?/,"");

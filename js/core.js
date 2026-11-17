@@ -365,6 +365,21 @@ App.rangeDates = (rng=S.range) => {
   return all.filter(d=>d>=from && d<=end);
 };
 App.rangeLabel = (rng=S.range) => rng==="all" ? "ทั้งหมด" : `${rng} วันล่าสุด`;
+/* ช่วงเวลาที่เลือกดูในหน้าภาพรวม: วัน / สัปดาห์ (จันทร์–อาทิตย์) / เดือน / ปี รอบวันที่ anchor */
+App.periodRange = (mode, anchor) => { const d=parseD(anchor), y=d.getFullYear(), mo=d.getMonth(); let from,to,label;
+  if(mode==="day"){ from=to=anchor; label=thLong(anchor); }
+  else if(mode==="week"){ from=addDays(anchor, -((d.getDay()+6)%7)); to=addDays(from,6); label=`สัปดาห์ ${thShort(from)} – ${thShort(to)} ${parseD(to).getFullYear()+543}`; }
+  else if(mode==="month"){ from=isoD(new Date(y,mo,1)); to=isoD(new Date(y,mo+1,0)); label=`เดือน${TH_MF[mo]} ${y+543}`; }
+  else { from=y+"-01-01"; to=y+"-12-31"; label=`ปี ${y+543}`; }
+  return {mode, anchor, from, to, label}; };
+App.periodDates = pr => App.allDates().filter(x=>x>=pr.from && x<=pr.to && x<=today());
+/* เลื่อนช่วงเวลาไปข้างหน้า/ถอยหลัง 1 ช่วง (dir = 1 หรือ -1) */
+App.stepAnchor = (mode, anchor, dir) => { const d=parseD(anchor);
+  if(mode==="day") return addDays(anchor, dir);
+  if(mode==="week") return addDays(anchor, 7*dir);
+  const y=d.getFullYear(), mo=d.getMonth(), day=d.getDate();
+  if(mode==="month"){ const last=new Date(y,mo+dir+1,0).getDate(); return isoD(new Date(y,mo+dir,Math.min(day,last))); }
+  const last=new Date(y+dir,mo+1,0).getDate(); return isoD(new Date(y+dir,mo,Math.min(day,last))); };
 App.rows = (dates) => { const r=[]; dates.forEach(d=>MEALS.forEach(M=>r.push({date:d, M, m:App.meal(d,M.k)}))); return r; };
 App.hasDay = d => !!base().meals[d] || MEALS.some(M=>S.entries[d+"_"+M.k]) || !!S.daylogs[d];
 

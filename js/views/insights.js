@@ -81,11 +81,11 @@ function nutrition(dates){
       ${Object.values(A.EX).map(x=>`<span>${esc(x.name)}: ${esc(x.basis)}</span>`).join("")}
       <span>หน่วยครัวเรือนอื่นแปลงโดยประมาณ เช่น ข้าว 1 คำ ≈ ⅛ ทัพพี · ผลไม้ 1 ชิ้นพอดีคำ ≈ 0.15 ส่วน · ขนมปัง 1 แผ่น ≈ 1 ทัพพี · ไข่ 1 ฟอง = 2 ช้อนกินข้าว</span>
     </div></details></div>`;
-  h += `<div class="g-21"><div class="card">${A.cardHead("ได้รับเทียบความต้องการ", "เฉลี่ยต่อวันในช่วงที่เลือก")}
+  h += `<div class="card">${A.cardHead("ได้รับเทียบความต้องการ", "เฉลี่ยต่อวันในช่วงที่เลือก")}
       ${n.estMeals.length?`${A.nLegend()}${A.adequacy(n)}
       <div style="margin-top:18px"><h4 style="margin-bottom:8px">พลังงานมาจากอะไร${n.milkKnown?"":" (มื้อหลัก)"}</h4>${A.macroBar(n.macro, q)}</div>
       <p class="tiny" style="margin-top:12px">${n.milkKnown?"":"* ยังไม่รวมนม จึงเทียบกับ 80% ที่ควรได้จากมื้อหลัก · "}${esc(A.coverageText(n))} · มื้อที่ไม่ได้ประเมินไม่นับเป็นศูนย์ ใช้ค่าเฉลี่ยของมื้อที่ประเมินได้แทน</p>`:A.empty("ยังคำนวณไม่ได้","ใส่ปริมาณที่กินในแต่ละมื้อ เป็นหน่วยครัวเรือนหรือเป็นหมู่อาหาร")}</div>
-    <div class="card">${A.cardHead("ขาดอะไร ควรเพิ่มอะไร", "จากการคำนวณ ไม่ใช่การวินิจฉัย")}${A.gapsHTML(n.gaps)}</div></div>`;
+  `;
   const mx = Math.max(130, ...n.groups.map(g=>g.p||0));
   h += `<div class="card">${A.cardHead("อาหารหลัก 5 หมู่ ต่อวัน", `เทียบธงโภชนาการ ${q.band} และความต้องการสารอาหาร · เฉลี่ยต่อวัน รวมนมและของว่างที่บันทึก`, n.fiveDays?`<span class="pill ${n.fiveFull===n.fiveDays?"good":n.fiveFull?"warn":"bad"}">ครบ 5 หมู่ ${n.fiveFull}/${n.fiveDays} วัน</span>`:"")}
     ${n.estMeals.length?`${A.fiveHTML(n)}<p class="tiny" style="margin-top:10px">เส้นขีด = 100% ของที่ควรได้ทั้งวัน · % ของหมู่ = ค่าเฉลี่ยของส่วนย่อยในหมู่ · หมู่ 5 เทียบไขมันรวมกับขั้นต่ำ ${q.amdr.f[0]}% ของพลังงาน · "ครบ 5 หมู่" นับเฉพาะวันที่ประเมินได้ครบ 3 มื้อ${n.milkKnown?"":" · ยังไม่มีบันทึกนม หมู่ 1 จึงคิดจากเนื้อสัตว์ ไข่ ถั่วเท่านั้น"}</p>`:A.empty("ยังไม่มีการประเมินปริมาณ")}</div>
@@ -106,6 +106,7 @@ function nutrition(dates){
   const COLS = [["protein","หมู่ 1 เนื้อสัตว์","ช้อน"],["milk","หมู่ 1 นม","มล."],["carb","หมู่ 2 ข้าว-แป้ง","ทัพพี"],["veg","หมู่ 3 ผัก","ทัพพี"],["fruit","หมู่ 4 ผลไม้","ส่วน"],["oil","หมู่ 5 ไขมันเพิ่ม","ช้อนชา"]];
   const colV = {protein:"--g-protein", milk:"--g-milk", carb:"--g-carb", veg:"--g-veg", fruit:"--g-fruit", oil:"--g-fat"};
   h += `<div class="card">${A.cardHead("5 หมู่และพลังงาน รายมื้อ", "ค่าประเมิน ไม่ได้ชั่ง · % เทียบเป้าของมื้อนั้น (สัดส่วนมื้อ × ปริมาณที่ควรได้ทั้งวัน)")}${n.estMeals.length?`<div class="tw scroll"><table class="t"><thead><tr><th>มื้อ</th>${COLS.map(([k,l,u])=>`<th>${l}<br><span class="tiny">${u}</span></th>`).join("")}<th>พลังงาน</th><th>หมู่ที่มี</th><th>วิธีประเมิน</th></tr></thead><tbody>${n.estMeals.slice().reverse().map(x=>{ const it=x.it, sh=x.M.share; const tds=COLS.map(([k])=>{ const v=it.serv[k]||0; if(k==="oil"||k==="milk") return `<td class="num tiny${v?"":" off"}">${v?f(v):"ไม่มี"}</td>`; const tg=q.serv[k]*sh, pc=Math.round(v/tg*100); if(!v) return `<td class="off tiny">ไม่มี</td>`; return `<td><span class="meter" style="width:64px;display:block"><i style="width:${Math.min(100,pc)}%;background:var(${colV[k]})"></i></span><span class="tiny num">${f(v)} · ${pc}%</span></td>`; }).join(""); const tk=it.kcal, pk=Math.round(tk/(q.kcal*sh)*100), pr=A.present5(it.serv); return `<tr><td style="white-space:nowrap"><a href="#days-${x.date}">${thShort(x.date)}</a> ${x.M.short}</td>${tds}<td class="num" style="white-space:nowrap"><b>${Math.round(tk)}</b> kcal <span class="pill ${pk<60?"bad":pk<85?"warn":"good"} num">${pk}%</span></td><td style="white-space:nowrap">${A.fiveChips(pr)}</td><td class="tiny">${esc(A.METHOD[it.method])}${it.unknown?` · ${it.unknown} รายการไม่ทราบปริมาณ`:""}</td></tr>`; }).join("")}</tbody></table></div><p class="tiny" style="margin-top:8px">หมู่ 5 นับเฉพาะไขมันที่เพิ่มจากการปรุง (ผัด ทอด เจียว กะทิ ครีม เนย) ไขมันในเนื้อสัตว์และนมรวมอยู่ในไขมันรวมด้านบนแล้ว</p>`:A.empty("ยังไม่มีการประเมินปริมาณ")}</div>`;
+  h += `<div class="card">${A.cardHead("ขาดอะไร ควรเพิ่มอะไร", "จากการคำนวณ ไม่ใช่การวินิจฉัย")}${A.gapsHTML(n.gaps)}</div>`;
   return h;
 }
 
@@ -132,9 +133,10 @@ function growth(){
 }
 A.views.insights = { render(a){
   const tab = ["behavior","nutrition","growth"].includes(a)?a:"behavior";
-  const el=$("#v-insights"), dates=A.rangeDates();
-  el.innerHTML = subtabs(tab) + (tab==="behavior"?behavior(dates):tab==="nutrition"?nutrition(dates):growth());
+  const el=$("#v-insights"), cur=A.periodCur(), dates=cur.dates, byPeriod = tab!=="growth"; /* การเติบโตดูตามอายุ ไม่ขึ้นกับช่วงเวลา */
+  el.innerHTML = subtabs(tab) + (byPeriod ? A.periodBarHTML(cur) + `<p class="sub" style="margin:0 0 12px">${esc(cur.pr.label)} · ${dates.length?`${dates.length} วันที่มีข้อมูล`:"ยังไม่มีข้อมูลในช่วงนี้"}</p>` : "") + (tab==="behavior"?behavior(dates):tab==="nutrition"?nutrition(dates):growth());
   $$('[data-seg="ins"] button', el).forEach(b=>b.onclick=()=>A.go(b.dataset.v));
+  if(byPeriod) A.periodBind(el, cur);
   const sv=$("#gf-save"); if(sv) sv.onclick=async()=>{ const d=$("#gf-d").value, w=parseFloat($("#gf-w").value), hh=parseFloat($("#gf-h").value);
     if(!d||(!w&&!hh)){ $("#gf-msg").textContent="กรุณาระบุวันที่ และน้ำหนักหรือส่วนสูงอย่างน้อยหนึ่งค่า"; return; }
     const rec={...(S.growthExtra[d]||{})}; if(w) rec.weight=w; if(hh){ rec.height=hh; rec.heightText=String(hh); } rec.src="บันทึกในแอป";

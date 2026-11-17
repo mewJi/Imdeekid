@@ -109,7 +109,7 @@ A.views.days = { render(arg){
     <div class="day-head"><h2>${A.thDayShort(d)}</h2>
       <button class="icbtn" data-href="#days-${addDays(d,-1)}" aria-label="วันก่อนหน้า">${icon("chevL")}</button>
       <button class="icbtn" data-href="#days-${addDays(d,1)}" aria-label="วันถัดไป" ${d>=today()?"disabled":""}>${icon("chevR")}</button>
-      <button class="btn primary" data-log="${d}|${A.guessMeal()}">${icon("plus")}บันทึก</button></div>
+      <button class="btn primary" data-log="${d}||day">${icon("plus")}บันทึก</button></div>
     ${sm||es?`<div class="note">${sm?esc(sm):""}${sm&&es?"<br><br>":""}${es?`<b>บันทึกในแอป:</b> ${esc(es)}`:""}</div>`:""}
     ${energyCard(d)}
     ${daylogCard(d)}
